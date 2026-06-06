@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>Antigravity IDE使用教程</title>
+      <link href="/2026/06/06/Antigravity-IDE%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B/"/>
+      <url>/2026/06/06/Antigravity-IDE%E4%BD%BF%E7%94%A8%E6%95%99%E7%A8%8B/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Antigravity-IDE-详细使用教程"><a href="#Antigravity-IDE-详细使用教程" class="headerlink" title="Antigravity IDE 详细使用教程"></a>Antigravity IDE 详细使用教程</h1><p>随着 AI 技术的飞速发展，AI 编程辅助工具已经成为开发者日常工作中不可或缺的一部分。本文将详细介绍由 Google DeepMind 团队研发的 <strong>Antigravity IDE</strong>，带你了解这款强大的“结对编程”AI助手，以及国内开发者如何高效地使用它。</p><span id="more"></span><h2 id="1-什么是-Antigravity-IDE？"><a href="#1-什么是-Antigravity-IDE？" class="headerlink" title="1. 什么是 Antigravity IDE？"></a>1. 什么是 Antigravity IDE？</h2><p>Antigravity 是一款具备高度 <strong>Agentic（智能体化）</strong> 能力的 AI 编程助手。与传统的代码自动补全工具不同，它不仅能回答你的编程问题，还能<strong>直接与你的本地开发环境进行交互</strong>。</p><p>它在背后使用强大的模型（例如 <strong>Gemini 3.1 Pro</strong> 等），能够自主阅读项目代码、修改文件、运行终端命令，甚至执行完整的测试和构建流程。</p><h2 id="2-核心功能亮点"><a href="#2-核心功能亮点" class="headerlink" title="2. 核心功能亮点"></a>2. 核心功能亮点</h2><h3 id="2-1-本地工作区完全访问"><a href="#2-1-本地工作区完全访问" class="headerlink" title="2.1 本地工作区完全访问"></a>2.1 本地工作区完全访问</h3><p>Antigravity IDE 可以直接读取你的本地代码库，无需你手动复制粘贴代码。当你需要修改某个功能时，它会自动在相关文件中进行精准修改，甚至可以帮你创建新项目或新文件。</p><h3 id="2-2-自动规划与多步执行-Planning-Mode"><a href="#2-2-自动规划与多步执行-Planning-Mode" class="headerlink" title="2.2 自动规划与多步执行 (Planning Mode)"></a>2.2 自动规划与多步执行 (Planning Mode)</h3><p>面对复杂的开发需求（如重构代码、搭建新架构），IDE 会自动进入 <strong>Planning Mode（规划模式）</strong>。</p><ul><li>它会先对你的代码库进行调研。</li><li>随后生成一份详细的 <code>implementation_plan.md</code> (实施计划) 供你审查。</li><li>只有在你确认并批准后，它才会分步执行代码修改，并实时更新进度任务清单。</li></ul><h3 id="2-3-Artifacts（智能文档面板）"><a href="#2-3-Artifacts（智能文档面板）" class="headerlink" title="2.3 Artifacts（智能文档面板）"></a>2.3 Artifacts（智能文档面板）</h3><p>除了直接在对话框中回复，Antigravity 还可以生成专属的 <strong>Artifacts</strong>（比如 markdown 报表、流程图、代码差异对比等）。这些内容会以结构化的方式单独展示，极大地方便了开发者查阅复杂的架构设计或排错日志。</p><h3 id="2-4-强大的终端与工具支持"><a href="#2-4-强大的终端与工具支持" class="headerlink" title="2.4 强大的终端与工具支持"></a>2.4 强大的终端与工具支持</h3><ul><li><strong>终端执行能力</strong>：它可以向终端发送构建、测试等命令（需要你的授权），从而实现一站式的“编写 -&gt; 运行 -&gt; 调试”。</li><li><strong>MCP (Model Context Protocol)</strong>：支持通过 MCP 接入更多本地工具和数据源，例如直接读取和操作 Jupyter Notebook 文件等。</li><li><strong>内置浏览器与图片生成</strong>：在需要时，它可以通过浏览器子智能体查询文档，或使用内置工具生成设计所需的占位图。</li></ul><h2 id="3-高级用法：Slash-Commands（斜杠命令）"><a href="#3-高级用法：Slash-Commands（斜杠命令）" class="headerlink" title="3. 高级用法：Slash Commands（斜杠命令）"></a>3. 高级用法：Slash Commands（斜杠命令）</h2><p>在对话框中，你可以使用斜杠命令来触发特定的高级工作流：</p><ul><li><code>/goal</code>：当你有一个需要长时间运行的任务（比如彻夜运行的重构或测试）时，使用该命令，AI 会进入深度工作模式，直到目标完全达成为止才会停止。</li><li><code>/schedule</code>：适用于需要定时执行或延时触发的任务。例如让 AI 每隔一段时间帮你检查一下后台服务的运行状态。</li><li><code>/grill-me</code>：当你不确定具体的需求细节或设计方案时，AI 会通过问答的形式“盘问”你，从而逐步引导出最完美的架构设计与实现计划。</li></ul><h2 id="4-给国内开发者的使用建议"><a href="#4-给国内开发者的使用建议" class="headerlink" title="4. 给国内开发者的使用建议"></a>4. 给国内开发者的使用建议</h2><ol><li><strong>善用中文表达需求</strong>：Antigravity 对中文的支持极其出色，你可以使用完全口语化的中文向它描述复杂的业务逻辑，它都能精准理解并转化为代码。</li><li><strong>给出明确的上下文</strong>：虽然它能自动读取文件，但如果你在提问时顺带说明“请帮我修改 <code>source/_posts</code> 目录下的某文件”，它能更快速地定位目标，节省上下文搜索的时间。</li><li><strong>拥抱结对编程思想</strong>：不要仅仅把它当做一个问答机器，而是将它视为你的初级&#x2F;中级开发同事。你可以指派它去“排查一下某某模块的报错原因”，它会自动去阅读代码、运行终端、查看日志并给出结论。</li></ol><h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>Antigravity IDE 正在重新定义我们编写代码的方式。通过掌握它的自动化执行能力和规划模式，你的开发效率将得到前所未有的提升。赶紧在你的工作区中试一试吧！</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 教程 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> Antigravity IDE </tag>
+            
+            <tag> 教程 </tag>
+            
+            <tag> AI编程 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>MyBatis学习笔记</title>
       <link href="/2025/12/11/MyBatis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/"/>
       <url>/2025/12/11/MyBatis%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/</url>
