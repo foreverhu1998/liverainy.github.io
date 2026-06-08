@@ -1,0 +1,565 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Spring框架与微服务面试考题 | 活在下雨天的博客</title><meta name="author" content="Live Rainy"><meta name="copyright" content="Live Rainy"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="全面覆盖Spring核心机制、自动装配、声明式事务、分布式事务及微服务网关、Feign调优的面试背诵指南。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring框架与微服务面试考题">
+<meta property="og:url" content="https://www.liverainy.online/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html">
+<meta property="og:site_name" content="活在下雨天的博客">
+<meta property="og:description" content="全面覆盖Spring核心机制、自动装配、声明式事务、分布式事务及微服务网关、Feign调优的面试背诵指南。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg">
+<meta property="article:published_time" content="2026-06-08T14:08:00.000Z">
+<meta property="article:modified_time" content="2026-06-08T15:09:09.585Z">
+<meta property="article:author" content="Live Rainy">
+<meta property="article:tag" content="Spring">
+<meta property="article:tag" content="微服务">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Spring框架与微服务面试考题",
+  "url": "https://www.liverainy.online/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/",
+  "image": "https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg",
+  "datePublished": "2026-06-08T14:08:00.000Z",
+  "dateModified": "2026-06-08T15:09:09.585Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Live Rainy",
+      "url": "https://www.liverainy.online"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg"><link rel="canonical" href="https://www.liverainy.online/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css?v=5.5.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Spring框架与微服务面试考题',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p2.jpg" alt="Logo"></a><a class="nav-page-title" href="/"><span class="site-name">Spring框架与微服务面试考题</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Spring框架与微服务面试考题</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-08T14:08:00.000Z" title="发表于 2026-06-08 22:08:00">2026-06-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-08T15:09:09.585Z" title="更新于 2026-06-08 23:09:09">2026-06-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%A2%E8%AF%95%E5%A4%8D%E4%B9%A0/">面试复习</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="02-Spring框架与微服务-·-高频面试考题背诵指南"><a href="#02-Spring框架与微服务-·-高频面试考题背诵指南" class="headerlink" title="02 - Spring框架与微服务 · 高频面试考题背诵指南"></a>02 - Spring框架与微服务 · 高频面试考题背诵指南</h1><hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#q1spring-ioc-%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86beanfactory-%E5%92%8C-applicationcontext-%E7%9A%84%E5%8C%BA%E5%88%AB">Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？</a></li>
+<li><a href="#q2spring-bean-%E7%9A%84%E5%AE%8C%E6%95%B4%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F">Q2：Spring Bean 的完整生命周期</a></li>
+<li><a href="#q3spring-aop-%E5%8E%9F%E7%90%86jdk-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E5%92%8C-cglib-%E4%BB%A3%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB">Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？</a></li>
+<li><a href="#q4spring-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%E4%B8%89%E7%BA%A7%E7%BC%93%E5%AD%98%E5%90%84%E8%87%AA%E7%9A%84%E4%BD%9C%E7%94%A8">Q4：Spring 如何解决循环依赖？三级缓存各自的作用？</a></li>
+<li><a href="#q5autowired-%E5%92%8C-resource-%E7%9A%84%E5%8C%BA%E5%88%AB">Q5：@Autowired 和 @Resource 的区别？</a></li>
+<li><a href="#q6transactional-%E5%A4%B1%E6%95%88%E7%9A%84%E5%9C%BA%E6%99%AF%E8%87%B3%E5%B0%91-5-%E7%A7%8D">Q6：@Transactional 失效的场景（至少 5 种）</a></li>
+<li><a href="#q7spring-%E4%BA%8B%E5%8A%A1%E7%9A%84-7-%E7%A7%8D%E4%BC%A0%E6%92%AD%E8%A1%8C%E4%B8%BA">Q7：Spring 事务的 7 种传播行为</a></li>
+<li><a href="#q8springboot-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%8E%9F%E7%90%86springbootapplication-%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88">Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？</a></li>
+<li><a href="#q9mybatis-%E7%9A%84%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98%E5%92%8C%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%E5%88%86%E5%88%AB%E6%9C%89%E4%BB%80%E4%B9%88%E5%9D%91">Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？</a></li>
+<li><a href="#q10mybatis-%E7%9A%84-%E5%92%8C-%E7%9A%84%E5%8C%BA%E5%88%AB">Q10：MyBatis 的 #{} 和 ${} 的区别？</a></li>
+<li><a href="#q11nacos-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E5%92%8C-eureka-%E7%9A%84%E5%8C%BA%E5%88%AB">Q11：Nacos 注册中心工作原理？和 Eureka 的区别？</a></li>
+<li><a href="#q12sentinel-%E7%9A%84%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95%E5%92%8C%E7%86%94%E6%96%AD%E7%AD%96%E7%95%A5">Q12：Sentinel 的限流算法和熔断策略</a></li>
+<li><a href="#q13seata-%E7%9A%84-tcc-%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86at-%E6%A8%A1%E5%BC%8F%E5%92%8C-tcc-%E7%9A%84%E5%8C%BA%E5%88%AB">Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？</a></li>
+<li><a href="#q14tcc-%E6%A8%A1%E5%BC%8F%E7%9A%84%E4%B8%89%E5%A4%A7%E5%BC%82%E5%B8%B8%E5%9C%BA%E6%99%AF%E7%A9%BA%E5%9B%9E%E6%BB%9A%E6%82%AC%E6%8C%82%E5%B9%82%E7%AD%89">Q14：TCC 模式的三大异常场景（空回滚、悬挂、幂等）</a></li>
+<li><a href="#q15%E5%8F%AF%E9%9D%A0%E6%B6%88%E6%81%AF%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7%E6%9C%AC%E5%9C%B0%E6%B6%88%E6%81%AF%E8%A1%A8%E6%96%B9%E6%A1%88">Q15：可靠消息最终一致性（本地消息表方案）</a></li>
+<li><a href="#q162pc-3pc-tcc-saga-%E5%8F%AF%E9%9D%A0%E6%B6%88%E6%81%AF-%E4%BA%94%E5%A4%A7%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94">Q16：2PC &#x2F; 3PC &#x2F; TCC &#x2F; Saga &#x2F; 可靠消息 五大方案对比</a></li>
+<li><a href="#q17feign-%E7%9A%84%E8%B6%85%E6%97%B6%E9%87%8D%E8%AF%95%E4%B8%8E%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E5%8E%9F%E7%90%86">Q17：Feign 的超时、重试与负载均衡原理</a></li>
+<li><a href="#q18spring-cloud-gateway-%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%BA%94%E7%94%A8">Q18：Spring Cloud Gateway 核心架构与应用</a></li>
+</ul>
+<hr>
+<span id="more"></span>
+
+<h2 id="一、Spring-Core"><a href="#一、Spring-Core" class="headerlink" title="一、Spring Core"></a>一、Spring Core</h2><h3 id="Q1：Spring-IOC-的工作原理？BeanFactory-和-ApplicationContext-的区别？"><a href="#Q1：Spring-IOC-的工作原理？BeanFactory-和-ApplicationContext-的区别？" class="headerlink" title="Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？"></a>Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？</h3><p><strong>核心考点</strong>：控制反转思想、容器启动流程、两种容器的差异。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><code>IOC（控制反转）</code> 的核心思想是：对象的创建和依赖关系的管理不再由业务代码自己控制，而是<strong>交给 Spring 容器</strong>来负责。我们只需要通过注解或 XML 配置声明 Bean 的定义，容器会在启动时扫描这些定义，完成 Bean 的实例化、属性填充和依赖注入，并将 Bean 存储在内部的 <code>Map&lt;String, BeanDefinition&gt;</code> 结构中。</p>
+<p><strong><code>BeanFactory</code> vs <code>ApplicationContext</code></strong>：</p>
+<ul>
+<li><code>BeanFactory</code> 是最基础的 IOC 容器接口，采用<strong>懒加载</strong>策略，只有在第一次调用 <code>getBean()</code> 时才实例化 Bean，功能较为简单。</li>
+<li><code>ApplicationContext</code> 继承自 <code>BeanFactory</code>，是更完整的企业级容器，支持<strong>饿加载</strong>（容器启动时就实例化所有单例 Bean）、国际化（i18n）、事件发布（<code>ApplicationEvent</code>）、AOP 自动代理等扩展功能。生产项目中一律使用 <code>ApplicationContext</code>。</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="Q2：Spring-Bean-的完整生命周期"><a href="#Q2：Spring-Bean-的完整生命周期" class="headerlink" title="Q2：Spring Bean 的完整生命周期"></a>Q2：Spring Bean 的完整生命周期</h3><p><strong>核心考点</strong>：从实例化到销毁的完整 11 个步骤。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Spring Bean 的完整生命周期如下：</p>
+<ol>
+<li><strong>实例化（Instantiation）</strong>：容器通过反射调用构造方法创建 Bean 的原始对象（此时属性还未填充）。</li>
+<li><strong>属性填充（Populate Properties）</strong>：将配置文件或注解中声明的属性值和依赖的其他 Bean 注入进来（<code>@Autowired</code>、<code>@Value</code> 在这一步生效）。</li>
+<li><strong><code>Aware</code> 接口回调</strong>：如果 Bean 实现了 <code>BeanNameAware</code>、<code>BeanFactoryAware</code>、<code>ApplicationContextAware</code> 等接口，容器会依次回调对应的 <code>setXxx()</code> 方法，让 Bean 能感知到容器的相关信息。</li>
+<li><strong><code>BeanPostProcessor</code> 前置处理（<code>postProcessBeforeInitialization</code>）</strong>：对 Bean 进行初始化前的增强处理，Spring AOP 的代理对象就是在 BeanPostProcessor 中创建的。</li>
+<li><strong>初始化（Initialization）</strong>：依次执行 <code>@PostConstruct</code> 注解方法 → <code>InitializingBean.afterPropertiesSet()</code> → XML 中配置的 <code>init-method</code>。</li>
+<li><strong><code>BeanPostProcessor</code> 后置处理（<code>postProcessAfterInitialization</code>）</strong>：初始化后的增强，<strong>Spring AOP 代理实际上在此阶段生成并替换原始 Bean</strong>。</li>
+<li><strong>Bean 就绪，放入单例池（singletonObjects）</strong>：Bean 可以被正常使用。</li>
+<li><strong>销毁（Destruction）</strong>：容器关闭时，依次执行 <code>@PreDestroy</code> → <code>DisposableBean.destroy()</code> → XML 配置的 <code>destroy-method</code>。</li>
+</ol>
+</blockquote>
+<hr>
+<h3 id="Q3：Spring-AOP-原理？JDK-动态代理和-CGLIB-代理的区别？"><a href="#Q3：Spring-AOP-原理？JDK-动态代理和-CGLIB-代理的区别？" class="headerlink" title="Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？"></a>Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？</h3><p><strong>核心考点</strong>：代理模式，两种代理的底层实现，何时用哪种。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Spring AOP 的本质是<strong>动态代理</strong>。Spring 会在 Bean 初始化的 <code>BeanPostProcessor</code> 后置处理阶段，判断该 Bean 是否需要被 AOP 切面增强，如果需要，则为该 Bean 创建一个代理对象并返回，后续从容器中获取到的就是这个代理对象。</p>
+<p>Spring 支持两种代理方式：</p>
+<p><strong>JDK 动态代理</strong>：</p>
+<ul>
+<li>要求目标类必须<strong>实现至少一个接口</strong>。</li>
+<li>代理对象通过 <code>java.lang.reflect.Proxy.newProxyInstance()</code> 创建，代理对象实现了与目标类相同的接口。</li>
+<li>方法调用通过 <code>InvocationHandler.invoke()</code> 进行拦截和增强。</li>
+</ul>
+<p><strong>CGLIB 代理</strong>：</p>
+<ul>
+<li><strong>不要求目标类实现接口</strong>，适用于没有接口的普通类。</li>
+<li>通过字节码技术（ASM）在运行时动态生成目标类的<strong>子类</strong>作为代理对象，通过重写父类方法来实现拦截。</li>
+<li>因为是继承方式实现，<code>final</code> 修饰的类和方法<strong>无法被代理</strong>。</li>
+</ul>
+<p><strong>选择策略</strong>：在 Spring Boot 2.x 中，默认强制使用 CGLIB（<code>spring.aop.proxy-target-class=true</code>），因为 CGLIB 不需要依赖接口，更通用。</p>
+</blockquote>
+<hr>
+<h3 id="Q4：Spring-如何解决循环依赖？三级缓存各自的作用？"><a href="#Q4：Spring-如何解决循环依赖？三级缓存各自的作用？" class="headerlink" title="Q4：Spring 如何解决循环依赖？三级缓存各自的作用？"></a>Q4：Spring 如何解决循环依赖？三级缓存各自的作用？</h3><p><strong>核心考点</strong>：三个 Map 的存储内容，解决循环依赖的完整流程，为何需要三级而不是二级。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Spring 通过<strong>三级缓存</strong>来解决单例 Bean 之间的循环依赖：</p>
+<ul>
+<li><strong>一级缓存（<code>singletonObjects</code>）</strong>：存储<strong>完全初始化好的 Bean</strong>，可以直接对外使用。</li>
+<li><strong>二级缓存（<code>earlySingletonObjects</code>）</strong>：存储<strong>提前暴露的、尚未完全初始化的 Bean 对象</strong>（已实例化但属性还未填充）。</li>
+<li><strong>三级缓存（<code>singletonFactories</code>）</strong>：存储 <strong>Bean 的工厂对象（<code>ObjectFactory</code>）</strong>，调用工厂的 <code>getObject()</code> 方法可以得到 Bean 的早期引用（可能是代理对象）。</li>
+</ul>
+<p><strong>解决循环依赖的流程（A 依赖 B，B 依赖 A）</strong>：</p>
+<ol>
+<li>创建 A，A 实例化后，将 A 的 <code>ObjectFactory</code> 放入<strong>三级缓存</strong>。</li>
+<li>A 开始填充属性，发现需要注入 B，触发 B 的创建。</li>
+<li>创建 B，B 实例化后，将 B 的 <code>ObjectFactory</code> 放入三级缓存。</li>
+<li>B 填充属性时，发现需要注入 A，去三级缓存中找到 A 的工厂，调用 <code>getObject()</code> 获取 A 的早期引用，并将其升级到<strong>二级缓存</strong>，A 的工厂从三级缓存中移除。</li>
+<li>B 成功注入了 A 的早期引用，B 完成初始化，进入<strong>一级缓存</strong>。</li>
+<li>A 继续完成属性填充（注入了完整的 B），A 完成初始化，进入一级缓存。</li>
+</ol>
+<p><strong>为什么需要三级而不是二级</strong>：三级缓存中存的是 <code>ObjectFactory</code> 而不是对象本身，目的是支持 <strong>AOP 代理</strong>。如果 A 需要被 AOP 代理，则调用 <code>ObjectFactory.getObject()</code> 时会返回 A 的代理对象而非原始对象，确保 B 注入的是 A 的代理版本。如果只有二级缓存（直接存原始对象），就无法在循环依赖场景下保证注入的是正确的代理对象。</p>
+</blockquote>
+<hr>
+<h3 id="Q5：-Autowired-和-Resource-的区别？"><a href="#Q5：-Autowired-和-Resource-的区别？" class="headerlink" title="Q5：@Autowired 和 @Resource 的区别？"></a>Q5：@Autowired 和 @Resource 的区别？</h3><p><strong>核心考点</strong>：注入方式、来源规范、按类型 vs 按名称。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<ul>
+<li><strong><code>@Autowired</code></strong>：Spring 原生注解，<strong>优先按类型（byType）注入</strong>。如果容器中有多个相同类型的 Bean，则再按字段名（byName）进行匹配，也可以配合 <code>@Qualifier</code> 指定 Bean 名称。</li>
+<li><strong><code>@Resource</code></strong>：JDK 原生注解（<code>javax.annotation</code>），<strong>优先按名称（byName）注入</strong>。如果找不到匹配名称，再按类型匹配。适合希望减少对 Spring 框架依赖的场景。</li>
+</ul>
+<p>实际开发中两者差别不大，<code>@Autowired</code> 更常用，但当接口有多个实现类时，<code>@Autowired + @Qualifier(&quot;beanName&quot;)</code> 或 <code>@Resource(name=&quot;beanName&quot;)</code> 来明确指定是最清晰的做法。</p>
+</blockquote>
+<hr>
+<h3 id="Q6：-Transactional-失效的场景（至少-5-种）"><a href="#Q6：-Transactional-失效的场景（至少-5-种）" class="headerlink" title="Q6：@Transactional 失效的场景（至少 5 种）"></a>Q6：@Transactional 失效的场景（至少 5 种）</h3><p><strong>核心考点</strong>：AOP 代理机制导致的各种失效场景。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><code>@Transactional</code> 失效最常见的场景有以下几种：</p>
+<ol>
+<li><strong>自我调用（同类内部调用）</strong>：在同一个 Service 类中，方法 A（无事务）直接调用方法 B（有 <code>@Transactional</code>），因为 A 内部调用 B 是通过 <code>this.B()</code>，没有走 Spring 的代理对象，事务切面无法被触发，事务完全失效。解决方法：通过 <code>ApplicationContext</code> 获取自身代理对象再调用，或将 B 方法抽取到另一个 Service 类中。</li>
+<li><strong>方法非 public</strong>：Spring 事务的 AOP 拦截器只对 <code>public</code> 方法生效，<code>private</code>、<code>protected</code> 或包级别方法上的 <code>@Transactional</code> 会被忽略。</li>
+<li><strong>异常被 catch 吞掉</strong>：方法内部用 <code>try-catch</code> 捕获了异常，没有在 <code>catch</code> 中重新抛出，Spring 的事务管理器感知不到异常，事务不会回滚。</li>
+<li><strong>异常类型不匹配</strong>：<code>@Transactional</code> 默认只对 <code>RuntimeException</code> 和 <code>Error</code> 回滚，如果抛出的是 <code>IOException</code> 等受检异常，事务不会回滚。需要配置 <code>@Transactional(rollbackFor = Exception.class)</code>。</li>
+<li><strong>数据库不支持事务</strong>：如使用 MySQL 的 <code>MyISAM</code> 存储引擎，本身不支持事务，注解无效。</li>
+<li><strong>Bean 未被 Spring 管理</strong>：如果类没有被 Spring 扫描到（忘加 <code>@Service</code>），不在容器中，自然没有代理。</li>
+<li><strong>多线程中失效</strong>：<code>@Transactional</code> 的事务是绑定在当前线程的 <code>Connection</code> 上的，如果方法内开启了新线程去执行数据库操作，新线程拿到的是不同的 <code>Connection</code>，不在同一个事务中。</li>
+</ol>
+</blockquote>
+<hr>
+<h3 id="Q7：Spring-事务的-7-种传播行为"><a href="#Q7：Spring-事务的-7-种传播行为" class="headerlink" title="Q7：Spring 事务的 7 种传播行为"></a>Q7：Spring 事务的 7 种传播行为</h3><p><strong>核心考点</strong>：各传播行为对当前事务的处理逻辑，<code>REQUIRED</code> vs <code>REQUIRES_NEW</code> vs <code>NESTED</code> 的区别。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Spring 事务传播行为定义了”当一个事务方法被另一个事务方法调用时，该如何处理事务”：</p>
+<table>
+<thead>
+<tr>
+<th>传播行为</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>REQUIRED</code>（默认）</td>
+<td>有事务则加入，没有则新建。最常用。</td>
+</tr>
+<tr>
+<td><code>REQUIRES_NEW</code></td>
+<td>无论如何都<strong>新建一个独立事务</strong>，挂起当前事务。两个事务互不影响，互不回滚。</td>
+</tr>
+<tr>
+<td><code>NESTED</code></td>
+<td>在当前事务内创建一个<strong>嵌套事务（保存点 Savepoint）</strong>，子事务可以独立回滚到保存点，不影响父事务；但父事务回滚会导致子事务也回滚。</td>
+</tr>
+<tr>
+<td><code>SUPPORTS</code></td>
+<td>有事务则加入，没有事务则以非事务方式执行。</td>
+</tr>
+<tr>
+<td><code>NOT_SUPPORTED</code></td>
+<td>以非事务方式执行，若当前有事务则挂起事务。</td>
+</tr>
+<tr>
+<td><code>MANDATORY</code></td>
+<td>必须在事务中执行，若没有活动事务则抛异常。</td>
+</tr>
+<tr>
+<td><code>NEVER</code></td>
+<td>以非事务方式执行，若当前有事务则抛异常。</td>
+</tr>
+</tbody></table>
+<p>实际项目中，<code>REQUIRES_NEW</code> 常用于”子操作失败不影响主流程”的场景，比如在招行调度中台中，记录操作日志的方法使用 <code>REQUIRES_NEW</code>，即使日志写入失败也不影响主业务事务的提交。</p>
+</blockquote>
+<hr>
+<h2 id="二、SpringBoot"><a href="#二、SpringBoot" class="headerlink" title="二、SpringBoot"></a>二、SpringBoot</h2><h3 id="Q8：SpringBoot-自动装配原理？-SpringBootApplication-做了什么？"><a href="#Q8：SpringBoot-自动装配原理？-SpringBootApplication-做了什么？" class="headerlink" title="Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？"></a>Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？</h3><p><strong>核心考点</strong>：组合注解、<code>@EnableAutoConfiguration</code>、<code>spring.factories</code> SPI 机制。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><code>@SpringBootApplication</code> 是一个组合注解，包含了三个核心注解：</p>
+<ol>
+<li><strong><code>@SpringBootConfiguration</code></strong>：标识这是一个 Spring 配置类（本质是 <code>@Configuration</code>）。</li>
+<li><strong><code>@ComponentScan</code></strong>：开启组件扫描，默认扫描主启动类所在包及其子包下的所有 <code>@Component</code>、<code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 等注解。</li>
+<li><strong><code>@EnableAutoConfiguration</code></strong>：这是自动装配的核心。</li>
+</ol>
+<p><strong><code>@EnableAutoConfiguration</code> 的工作原理</strong>：</p>
+<ol>
+<li>它通过 <code>@Import(AutoConfigurationImportSelector.class)</code> 导入一个选择器。</li>
+<li>这个选择器的 <code>selectImports()</code> 方法会扫描所有 JAR 包的 <code>META-INF/spring.factories</code> 文件（JDK SPI 扩展机制），读取 <code>org.springframework.boot.autoconfigure.EnableAutoConfiguration</code> 键下所有的自动配置类全限定名（通常有 100+ 个）。</li>
+<li>然后通过 <code>@ConditionalOnClass</code>、<code>@ConditionalOnMissingBean</code>、<code>@ConditionalOnProperty</code> 等条件注解进行过滤，只有当条件满足时（比如类路径下存在某个类），对应的自动配置类才会生效。</li>
+<li>最终将满足条件的配置类注册到 Spring 容器中，完成相关 Bean 的自动创建。</li>
+</ol>
+<p><strong>💡 SpringBoot 3.x 版本变更</strong>：<br>从 SpringBoot 3.0 开始，官方不再默认扫描 <code>META-INF/spring.factories</code> 文件。自动装配的配置文件路径改为 <code>META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</code>。每个自动配置类的类名单独占一行，不再需要以逗号分隔，面试时需特别注意项目所使用的版本。</p>
+</blockquote>
+<hr>
+<h3 id="Q9：MyBatis-的一级缓存和二级缓存？分别有什么坑？"><a href="#Q9：MyBatis-的一级缓存和二级缓存？分别有什么坑？" class="headerlink" title="Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？"></a>Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？</h3><p><strong>核心考点</strong>：缓存作用域（SqlSession vs Mapper&#x2F;Namespace），脏数据问题。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>一级缓存（SqlSession 级别）</strong>：默认开启，生命周期与 <code>SqlSession</code> 相同。同一个 <code>SqlSession</code> 内，相同的查询语句和参数第二次查询时直接从缓存中返回，不访问数据库。</p>
+<p><strong>坑</strong>：在分布式或多 <code>SqlSession</code> 场景下，如果 Session A 修改了数据，Session B 的一级缓存中还保存着旧数据，会读取到脏数据。另外，执行 <code>insert</code>、<code>update</code>、<code>delete</code> 操作后，当前 <code>SqlSession</code> 的一级缓存会被清空。</p>
+<p><strong>二级缓存（Mapper&#x2F;Namespace 级别）</strong>：需要手动开启（在 mapper.xml 中加 <code>&lt;cache/&gt;</code>），生命周期与 <code>SqlSessionFactory</code> 相同，可以跨 <code>SqlSession</code> 共享。</p>
+<p><strong>坑（非常危险）</strong>：多表联查时，如果查询涉及表 A 和表 B，但缓存的 namespace 只绑定了 Mapper A，当表 B 数据变更时，Mapper A 的缓存不会失效，会读到脏数据。因此，<strong>生产中一般禁用 MyBatis 的二级缓存</strong>，而是使用 Redis 等统一的分布式缓存方案来替代。</p>
+</blockquote>
+<hr>
+<h3 id="Q10：MyBatis-的-和-的区别？"><a href="#Q10：MyBatis-的-和-的区别？" class="headerlink" title="Q10：MyBatis 的 #{} 和 ${} 的区别？"></a>Q10：MyBatis 的 #{} 和 ${} 的区别？</h3><p><strong>核心考点</strong>：预编译占位符 vs 字符串替换，SQL 注入风险。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<ul>
+<li><strong><code>#{}</code>（预编译占位符）</strong>：MyBatis 会将 <code>#{}</code> 替换为 <code>?</code>，通过 JDBC 的 <code>PreparedStatement</code> 预编译处理，传入的参数值会作为字符串被转义，<strong>完全防止 SQL 注入</strong>。这是绝大多数场景下的首选。</li>
+<li><strong><code>${}</code>（字符串拼接）</strong>：直接将参数值替换到 SQL 语句中，不做任何转义，存在严重的 <strong>SQL 注入风险</strong>。例如：<code>SELECT * FROM user WHERE name = &#39;${name}&#39;</code>，如果 name 传入 <code>&#39; OR 1=1 --</code>，就会执行 <code>SELECT * FROM user WHERE name = &#39;&#39; OR 1=1 --</code>，查出所有用户数据。</li>
+</ul>
+<p><code>${}</code> 唯一合理的使用场景是<strong>动态传入表名或列名</strong>（因为这类内容无法通过 <code>?</code> 参数传递），但此时必须在代码层面对传入值进行严格的白名单校验，杜绝用户直接控制输入。</p>
+</blockquote>
+<hr>
+<h2 id="三、Spring-Cloud-微服务"><a href="#三、Spring-Cloud-微服务" class="headerlink" title="三、Spring Cloud 微服务"></a>三、Spring Cloud 微服务</h2><h3 id="Q11：Nacos-注册中心工作原理？和-Eureka-的区别？"><a href="#Q11：Nacos-注册中心工作原理？和-Eureka-的区别？" class="headerlink" title="Q11：Nacos 注册中心工作原理？和 Eureka 的区别？"></a>Q11：Nacos 注册中心工作原理？和 Eureka 的区别？</h3><p><strong>核心考点</strong>：服务注册&#x2F;发现机制，AP vs CP，Nacos 推送 vs Eureka 拉取。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Nacos 工作原理</strong>：服务启动时，将自身的 IP、端口、服务名等信息向 Nacos Server 进行<strong>注册</strong>，Nacos 维护一个服务注册表。客户端（调用方）向 Nacos 发起<strong>订阅</strong>，Nacos 会主动将服务实例列表推送给订阅方，同时客户端也会定期从 Nacos 拉取最新列表作为兜底（<strong>推拉结合</strong>）。Nacos 通过心跳机制（默认 5s 一次）检测服务健康状态，如果 15s 内未收到心跳，将该实例标记为不健康，30s 后从注册表中剔除。</p>
+<p><strong>与 Eureka 的主要区别</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>Nacos</th>
+<th>Eureka</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一致性模型</td>
+<td>支持 AP（默认）和 CP（可切换）</td>
+<td>只支持 AP</td>
+</tr>
+<tr>
+<td>通知机制</td>
+<td><strong>主动推送</strong></td>
+<td>客户端<strong>定时拉取</strong>（30s&#x2F;次，更新慢）</td>
+</tr>
+<tr>
+<td>健康检测</td>
+<td>支持 TCP&#x2F;HTTP&#x2F;MySQL 等多种健康检查</td>
+<td>仅 HTTP 心跳</td>
+</tr>
+<tr>
+<td>配置中心</td>
+<td>内置</td>
+<td>需配合 Spring Cloud Config</td>
+</tr>
+<tr>
+<td>维护状态</td>
+<td>阿里开源，活跃维护</td>
+<td>Netflix 官方停止维护</td>
+</tr>
+</tbody></table>
+<p>在我们 SRM 和招行项目中均使用 Nacos 作为注册和配置中心，主要看中的是其推送机制带来的更快的服务发现响应，以及内置的配置中心能力。</p>
+</blockquote>
+<hr>
+<h3 id="Q12：Sentinel-的限流算法和熔断策略"><a href="#Q12：Sentinel-的限流算法和熔断策略" class="headerlink" title="Q12：Sentinel 的限流算法和熔断策略"></a>Q12：Sentinel 的限流算法和熔断策略</h3><p><strong>核心考点</strong>：滑动窗口限流，三种熔断策略（慢调用&#x2F;异常比例&#x2F;异常数）。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Sentinel 的限流算法</strong>：</p>
+<ul>
+<li><strong>滑动窗口算法（默认）</strong>：将 1 秒划分为多个小窗口（默认 10 个，每个 100ms），统计每个小窗口内的请求量，滑动求和判断是否超阈值。比固定窗口算法更平滑，不会出现边界突刺问题。</li>
+<li><strong>漏桶算法（<code>RuleConstant.CONTROL_BEHAVIOR_RATE_LIMITER</code>）</strong>：请求以固定速率匀速通过，超出速率的请求排队等待（队列模式），适合流量整形场景。</li>
+<li><strong>令牌桶算法</strong>：令牌以固定速率生成，请求消耗令牌，令牌满了停止生成，支持一定程度的流量突发。</li>
+</ul>
+<p><strong>Sentinel 的三种熔断策略</strong>：</p>
+<ol>
+<li><strong>慢调用比例</strong>：统计窗口期内，响应时间超过阈值（如 500ms）的请求占比超过设定比例（如 50%），触发熔断。熔断后进入半开状态，允许少量探测请求通过。</li>
+<li><strong>异常比例</strong>：统计窗口期内，异常请求占总请求的比例超过阈值，触发熔断。</li>
+<li><strong>异常数</strong>：统计窗口期内，异常请求的绝对数量超过阈值，触发熔断。</li>
+</ol>
+<p>在招行调度中台中，我们对所有 Feign 外部 RPC 调用配置了<strong>慢调用比例熔断</strong>，设定响应超过 2s 且慢调用比例超过 30% 时熔断 30s，降级返回兜底数据，防止因下游服务”假死”拖垮上游。</p>
+</blockquote>
+<hr>
+<h3 id="Q13：Seata-的-TCC-模式原理？AT-模式和-TCC-的区别？"><a href="#Q13：Seata-的-TCC-模式原理？AT-模式和-TCC-的区别？" class="headerlink" title="Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？"></a>Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？</h3><p><strong>核心考点</strong>：两阶段提交，AT 模式的自动回滚（undo_log），TCC 的业务侵入性。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>AT 模式（自动）</strong>：对业务代码无侵入，由 Seata 自动拦截 SQL，在执行前后生成 <code>undo_log</code>（回滚日志）。第一阶段：直接提交本地事务，释放数据库锁，并将 undo_log 持久化。第二阶段：如果全局事务提交成功，删除 undo_log；如果全局事务回滚，通过 undo_log 自动反向补偿恢复数据。<strong>AT 模式使用了全局行锁</strong>，高并发下性能有一定损耗。</p>
+<p><strong>TCC 模式（手动）</strong>：将业务逻辑拆分为三个方法：</p>
+<ul>
+<li><strong><code>Try</code></strong>：预留资源（如冻结库存、预扣余额），检查业务可行性。</li>
+<li><strong><code>Confirm</code></strong>：确认执行，消耗 Try 阶段预留的资源（真正扣减）。全局事务提交时调用。</li>
+<li><strong><code>Cancel</code></strong>：取消执行，释放 Try 阶段预留的资源（解冻）。全局事务回滚时调用。</li>
+</ul>
+<p><strong>核心区别</strong>：AT 模式对代码无侵入但有全局锁，适合并发量一般的场景；TCC 模式需要开发者手动实现三个方法，有业务侵入性，但不依赖数据库全局锁，<strong>并发性能更高</strong>，适合金融级高并发场景。在招行核心调度中台里，关键的资金流转操作使用了 TCC 模式保证分布式事务的强一致性。</p>
+</blockquote>
+<hr>
+<h3 id="Q14：TCC-模式的三大异常场景（空回滚、悬挂、幂等）"><a href="#Q14：TCC-模式的三大异常场景（空回滚、悬挂、幂等）" class="headerlink" title="Q14：TCC 模式的三大异常场景（空回滚、悬挂、幂等）"></a>Q14：TCC 模式的三大异常场景（空回滚、悬挂、幂等）</h3><p><strong>核心考点</strong>：TCC 的三个难题，各自解决手段。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>TCC 的核心难点不在于写 Try&#x2F;Confirm&#x2F;Cancel，而在于处理异常场景：</p>
+</blockquote>
+<blockquote>
+<p><strong>1. 空回滚（Empty Rollback）</strong>：</p>
+<ul>
+<li><strong>场景</strong>：Try 阶段由于网络超时，被判定为失败，TC（事务协调器）发起 Cancel。但 Try 请求其实根本没到达过调用方（或到达了但调用方没执行），Cancel 被执行时本地<strong>根本没有</strong>对应的预留资源。</li>
+<li><strong>解决</strong>：Cancel 操作需要支持<strong>空回滚</strong>——如果没找到对应的 Try 记录，Cancel 不能抛异常，而是记录一条”已回滚”标记，然后返回成功。</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>2. 悬挂（Suspend）</strong>：</p>
+<ul>
+<li><strong>场景</strong>：Cancel 比 Try 先到达。TC 先发起 Cancel（如 Try 超时），Cancel 执行完了，然后之前”堵在半路上的”Try 请求后到达执行了。如果 Try 执行成功并预扣了资源，这笔资源就永久被锁死了（Cancel 已经执行完了，没人来解冻）。</li>
+<li><strong>解决</strong>：Cancel 执行时记录一条”已回滚”标记。Try 执行前先检查该标记，如果发现”已回滚”，则拒绝执行 Try（返回失败），<strong>阻止悬挂的发生</strong>。</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>3. 幂等控制</strong>：Try &#x2F; Confirm &#x2F; Cancel 三个操作都可能因网络重试被多次调用，所以三者都必须是<strong>幂等的</strong>——重复执行结果一致。通常用业务唯一 ID 做唯一索引防重。</p>
+</blockquote>
+<blockquote>
+<p><strong>Seata TCC 框架的处理</strong>：Seata 的 TCC 模式通过维护一张事务记录表自动处理了空回滚和悬挂——Try 前查是否有 Cancel 记录（防悬挂），Cancel 前查是否有 Try 记录（空回滚则记录标记），Confirm&#x2F;Cancel 成功后记录状态（防幂等）。</p>
+</blockquote>
+<hr>
+<h3 id="Q15：可靠消息最终一致性（本地消息表方案）"><a href="#Q15：可靠消息最终一致性（本地消息表方案）" class="headerlink" title="Q15：可靠消息最终一致性（本地消息表方案）"></a>Q15：可靠消息最终一致性（本地消息表方案）</h3><p><strong>核心考点</strong>：本地事务 + 本地消息表 + 定时任务重试，适合高可用场景。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>可靠消息最终一致性是分布式事务中最常用的柔性方案，不需要两阶段提交，适合对实时一致性要求不高、但对可用性要求高的业务场景。</p>
+</blockquote>
+<blockquote>
+<p><strong>本地消息表方案（RocketMQ 事务消息同理）</strong>：</p>
+<ol>
+<li><strong>业务方（生产者）</strong>：在自己的数据库中，将<strong>业务操作</strong>和<strong>消息记录</strong>放在同一个本地事务中完成（如”创建订单” + “写入一条 MQ 消息记录”）。本地事务保证要么都成功要么都失败。</li>
+<li><strong>消息发送</strong>：定时任务轮询本地消息表中状态为”未发送”的记录，将消息投递到 MQ。发送成功后将记录状态更新为”已发送”。</li>
+<li><strong>消费方</strong>：消费消息，正常处理业务逻辑。消费完成后提交 offset。如果消费失败，MQ 重投或死信队列兜底。消费者必须有<strong>幂等性</strong>防止重复消费。</li>
+<li><strong>补偿检查</strong>：定时任务扫描超时未确认的消息（已发送但未消费或消费失败），进行人工处理或补偿。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>在招行调度中台的应用</strong>：流程调度中的回调通知场景使用了可靠消息方案（不是金融转账核心场景，那个才用 TCC）。流程执行完成后，在本地事务中同时写入回调消息记录，后台定时任务投递到 Kafka，下游系统幂等消费。这套方案保证了即使回调系统暂时不可用（网络闪断），消息也不会丢失，最大程度保证了流程状态的最终一致性。</p>
+</blockquote>
+<hr>
+<h3 id="Q16：2PC-3PC-TCC-Saga-可靠消息-五大方案对比"><a href="#Q16：2PC-3PC-TCC-Saga-可靠消息-五大方案对比" class="headerlink" title="Q16：2PC &#x2F; 3PC &#x2F; TCC &#x2F; Saga &#x2F; 可靠消息 五大方案对比"></a>Q16：2PC &#x2F; 3PC &#x2F; TCC &#x2F; Saga &#x2F; 可靠消息 五大方案对比</h3><p><strong>核心考点</strong>：各方案的一致性、性能、业务侵入性的权衡。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>一致性</th>
+<th>性能</th>
+<th>业务侵入</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>2PC（XA）</strong></td>
+<td>强一致</td>
+<td>差（全程锁资源）</td>
+<td>低（数据库直接支持）</td>
+<td>传统单体应用、并发低场景</td>
+</tr>
+<tr>
+<td><strong>3PC</strong></td>
+<td>强一致（比 2PC 略好）</td>
+<td>差</td>
+<td>低</td>
+<td>基本不用（2PC 的改良版，引入超时机制防阻塞），成本高，生态差</td>
+</tr>
+<tr>
+<td><strong>TCC</strong></td>
+<td>最终强一致</td>
+<td>好（不长期锁资源）</td>
+<td>高（需实现 Try&#x2F;Confirm&#x2F;Cancel）</td>
+<td>金融核心交易、库存扣减</td>
+</tr>
+<tr>
+<td><strong>Saga</strong></td>
+<td>最终一致</td>
+<td>好（无锁）</td>
+<td>中（需实现正向+补偿）</td>
+<td>长流程业务、微服务编排</td>
+</tr>
+<tr>
+<td><strong>可靠消息最终一致</strong></td>
+<td>最终一致（可能有短暂窗口）</td>
+<td>最好（完全异步）</td>
+<td>低（只需发消息+幂等消费）</td>
+<td>通知类、回调类、解耦场景</td>
+</tr>
+</tbody></table>
+</blockquote>
+<blockquote>
+<p>选型要点：核心金融资金用 TCC（强一致 + 高性能），通知回调用可靠消息（高吞吐、低耦合），跨多微服务的复杂长流程可以考虑 Saga（每个参与者独立提交 + 补偿回滚），2PC 基本不用于分布式场景（锁资源太久，性能太差）。</p>
+<p>在招行项目中，资金流转使用 TCC 模式（如节点流程执行中的状态扣减、冻结），回调通知下游使用可靠消息最终一致性方案（异步通知 + Kafka 投递 + 幂等消费）。</p>
+</blockquote>
+<hr>
+<h3 id="Q17：Feign-的超时、重试与负载均衡原理？"><a href="#Q17：Feign-的超时、重试与负载均衡原理？" class="headerlink" title="Q17：Feign 的超时、重试与负载均衡原理？"></a>Q17：Feign 的超时、重试与负载均衡原理？</h3><p><strong>核心考点</strong>：声明式客户端、Feign 的调用执行流程、超时配置冲突、Ribbon &#x2F; LoadBalancer 负载均衡原理。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Feign 工作原理</strong>：<br>Feign 是一个声明式的 HTTP 客户端。通过在接口上添加 <code>@FeignClient</code> 注解，Spring 容器启动时，会为该接口生成 JDK 动态代理对象（对应的 Handler 为 <code>FeignInvocationHandler</code>）。当调用接口方法时，代理对象拦截请求，通过 <code>SynchronousMethodHandler</code> 的 <code>executeAndDecode()</code> 方法进行处理：将方法参数通过 <code>Encoder</code> 序列化为 HTTP 请求体，生成一个 <code>Request</code> 对象，接着经过负载均衡器选择实例，交由底层的 <code>Client</code>（如 OkHttp&#x2F;HttpClient&#x2F;HttpURLConnection）发送 HTTP 请求，最后通过 <code>Decoder</code> 反序列化为接口返回值。</p>
+<p><strong>超时与重试</strong>：<br>Feign 内部默认有重试机制（默认不启用或重试 5 次，但微服务组件一般关闭它），超时默认是 10s（Read）和 20s（Connect）。<br><strong>在招行分布式环境的超时干预中</strong>：<br>我们一般关闭 Feign 的默认重试，并将超时控制权交给 Ribbon（或 Spring Cloud LoadBalancer），通过如下配置进行精细干预：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">ribbon:</span></span><br><span class="line">  <span class="attr">ReadTimeout:</span> <span class="number">2000</span>      <span class="comment"># 业务处理超时时间 2s</span></span><br><span class="line">  <span class="attr">ConnectTimeout:</span> <span class="number">1000</span>   <span class="comment"># 连接超时时间 1s</span></span><br><span class="line">  <span class="attr">MaxAutoRetries:</span> <span class="number">0</span>      <span class="comment"># 同一实例重试次数，设为 0</span></span><br><span class="line">  <span class="attr">MaxAutoRetriesNextServer:</span> <span class="number">1</span>  <span class="comment"># 切换实例重试次数，设为 1</span></span><br></pre></td></tr></table></figure>
+<p>对于写操作等非幂等接口，需关闭重试，以防止网络抖动导致的重复提交。</p>
+<p><strong>负载均衡机制</strong>：<br>Feign 会集成 Ribbon（或 Spring Cloud LoadBalancer）。Ribbon 从注册中心（如 Nacos）获取服务实例列表，本地维护一个缓存，并在发起请求时通过负载均衡算法（如 <code>RoundRobinRule</code> 轮询、<code>RandomRule</code> 随机、<code>BestAvailableRule</code> 最小并发数）计算出一个健康的实例 IP 和端口，最后拦截 Feign 的 Request 并重写 URL 进行请求。</p>
+</blockquote>
+<hr>
+<h3 id="Q18：Spring-Cloud-Gateway-核心架构与应用？"><a href="#Q18：Spring-Cloud-Gateway-核心架构与应用？" class="headerlink" title="Q18：Spring Cloud Gateway 核心架构与应用？"></a>Q18：Spring Cloud Gateway 核心架构与应用？</h3><p><strong>核心考点</strong>：Gateway vs Zuul 1.x、网关三大核心概念（Route, Predicate, Filter）、自定义拦截器鉴权与限流。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Gateway vs Zuul 1.x</strong>：</p>
+<ul>
+<li>Zuul 1.x 基于 Servlet 2.5 构建，是<strong>同步阻塞 I&#x2F;O</strong> 架构。每个请求占用一个线程，在高并发场景下极易耗尽线程池。</li>
+<li>Spring Cloud Gateway 基于 Spring WebFlux 和 Netty 构建，是<strong>异步非阻塞</strong>（Reactive）架构，使用极少量的线程就能处理大量并发请求，吞吐量和并发性能大幅领先。</li>
+</ul>
+<p><strong>核心概念</strong>：</p>
+<ol>
+<li><strong>Route（路由）</strong>：网关的基本模块，由 ID、目标 URI、断言集合、过滤器集合组成。</li>
+<li><strong>Predicate（断言）</strong>：Java 8 的 Predicate 接口，用于匹配请求属性（如 Path 路径、Method 方法、Header 请求头等）。</li>
+<li><strong>Filter（过滤器）</strong>：GatewayFilter 实例，在发送请求到下游服务之前（pre）或之后（post）修改请求&#x2F;响应。</li>
+</ol>
+<p><strong>自定义 Filter 拦截器实战</strong>：<br>在我们医博系统和 OpenAPI 开放平台中，我们自定义了 <code>GlobalFilter</code> 和 <code>GatewayFilterFactory</code> 实现如下功能：</p>
+<ul>
+<li><strong>统一鉴权</strong>：在 <code>pre</code> 阶段，从请求头获取 JWT Token，进行合法性校验、解析并将解析出的 userId&#x2F;role 信息写入 <code>ServerHttpRequest</code> 的 Header 中传递给下游微服务。若无效，直接将 Http 状态码设为 401 并结束请求。</li>
+<li><strong>分布式限流</strong>：使用 Gateway 的 <code>RequestRateLimiter</code> 过滤器，结合 Redis 和 Lua 脚本实现令牌桶限流算法。针对不同 API 或不同租户设定不同的 Rate 和 Capacity。</li>
+<li><strong>灰度发布&#x2F;路由干预</strong>：根据请求头中的特定版本号（如 <code>x-version: v2</code>）动态修改 <code>ServerWebExchange</code> 的路由目标，实现金丝雀&#x2F;灰度流量分流。</li>
+</ul>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.liverainy.online">Live Rainy</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.liverainy.online/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/">https://www.liverainy.online/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.liverainy.online" target="_blank">活在下雨天的博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a><a class="post-meta__tags" href="/tags/Spring/">Spring</a><a class="post-meta__tags" href="/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a></div><div class="post-share"><div class="social-share" data-image="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">Java基础与并发面试考题</div></div><div class="info-2"><div class="info-item-1">01 - Java基础与并发 · 高频面试考题背诵指南 目录 Q1：ArrayList 和 LinkedList 的区别？分别适用什么场景？ Q2：HashMap 底层数据结构是什么？JDK8 做了哪些优化？ Q3：HashMap 的扩容机制？为什么容量必须是 2 的幂次方？ Q4：HashMap 为何线程不安全？JDK7 的死链问题如何发生的？ Q5：ConcurrentHashMap 在 JDK7 和 JDK8 中的实现有何不同？ Q6：HashSet 的底层原理？如何保证元素不重复？ Q7：volatile 关键字的作用？能保证原子性吗？ Q8：synchronized 的实现原理？对象锁和类锁的区别？ Q9：锁升级的过程（无锁→偏向锁→轻量级锁→重量级锁）？ Q10：synchronized 和 ReentrantLock 有什么区别？ Q11：Java 内存模型（JMM）是什么？happens-before 原则有哪些？ Q12：什么是 AQS？它的核心原理是什么？ Q13：CountDownLatch、CyclicBarrier、Semaphore 的使用场景？ Q1...</div></div></div></a><a class="pagination-related" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282011_p0.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">MySQL数据库面试考题</div></div><div class="info-2"><div class="info-item-1">03 - MySQL数据库 · 高频面试考题背诵指南 目录 Q1：B+树为什么比 B树、哈希表更适合做数据库索引？ Q2：聚簇索引和非聚簇索引的区别？什么是回表？ Q3：什么是覆盖索引？如何避免回表？（结合美团项目案例） Q4：联合索引的最左前缀原则？什么情况会导致索引失效？ Q5：索引失效的常见场景（8种） Q6：Explain 各字段含义？type 字段性能排序？ Q7：MySQL 四种事务隔离级别 Q8：InnoDB MVCC 原理详解 Q9：InnoDB 的锁类型详解 Q10：MySQL 死锁如何排查和预防？ Q11：乐观锁和悲观锁？版本号机制如何实现乐观锁？ Q12：MySQL 深分页（LIMIT 1000000, 10）为什么慢？如何优化？ Q13：百万级大表分库分表策略 Q14：MySQL 主从复制原理？Binlog 三种格式的区别？ Q15：一条 SQL 语句在 MySQL 中的完整执行过程     一、索引原理Q1：B+树为什么比 B树、哈希表更适合做数据库索引？核心考点：B+树的叶子节点存数据、非叶子节点只存索引、支持范围查询。 背诵话术：  对比哈希表：哈希...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Elasticsearch面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Elasticsearch面试考题</div></div><div class="info-2"><div class="info-item-1">07 - Elasticsearch · 高频面试考题背诵指南 目录 Q1：什么是倒排索引？和正排索引有什么区别？ Q2：ES 的写入流程（数据如何落盘）？ Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？ Q4：ES 的查询流程（Query Then Fetch）？ Q5：ES 深分页（from + size）为什么慢？如何解决？ Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica） Q7：ES 如何保证写一致性？ Q8：ES 和 MySQL 在搜索场景下如何配合？ Q9：分片数和副本数的设计原则？ Q10：ES 为什么比 MySQL 的 LIKE 查询快？ Q11：ES 和 Solr 的选型对比？     一、核心原理Q1：什么是倒排索引？和正排索引有什么区别？核心考点：倒排索引的 Term → PostingList 映射结构，是 ES 全文检索的基石。 背诵话术：  正排索引：以文档 ID 为 Key，记录文档中包含了哪些词（文档 → 关键词）。MySQL 的 B+Tree 索引就是正排索引。适合按...</div></div></div></a><a class="pagination-related" href="/2026/06/08/JVM%E8%B0%83%E4%BC%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="JVM调优面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118298473_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">JVM调优面试考题</div></div><div class="info-2"><div class="info-item-1">06 - JVM调优 · 高频面试考题背诵指南 目录 Q1：JVM 内存区域划分？各区域存什么？哪些区域会 OOM？ Q2：JDK8 的元空间（Metaspace）为什么替换永久代（PermGen）？ Q3：对象的内存布局（对象头 + 实例数据 + 对齐填充） Q4：什么是逃逸分析？JVM 的三种逃逸优化？ Q5：什么是 GC Roots？哪些对象可以作为 GC Roots？ Q6：三种 GC 算法的原理、优缺点 Q7：新生代和老年代？对象晋升的条件？ Q8：CMS 垃圾收集器的工作原理和缺点 Q9：G1 垃圾收集器的 Region 设计 and 工作原理 Q10：ZGC 的原理和为什么能实现 &lt;10ms 的 STW？ Q11：CPU 飙高 100% 的完整排查步骤（结合招行项目） Q12：OOM 内存溢出的完整排查步骤（结合医博项目） Q13：频繁 Full GC 的排查思路 Q14：生产环境核心 JVM 参数 Q15：Arthas 常用诊断命令 Q16：类加载过程？什么是双亲委派模型？为什么要破坏它？     一、JVM 内存结构Q1：JVM 内存区域划分？各区域存什么...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Kafka消息队列面试考题</div></div><div class="info-2"><div class="info-item-1">05 - Kafka消息队列 · 高频面试考题背诵指南 目录 Q1：Kafka 的整体架构？核心组件关系？ Q2：Kafka 为什么这么快？ Q3：Kafka 消息存储结构 Q4：ISR、HW、LEO 分别是什么？ Q5：Kafka 生产者发送消息的完整流程 Q6：如何保障 Kafka 消息零丢失？ Q7：Kafka 生产者幂等性原理？如何开启？ Q8：Kafka 消费者组的工作机制 Q9：分区分配策略（Range &#x2F; RoundRobin &#x2F; Sticky） Q10：Rebalance 再平衡的触发条件和如何避免 Q11：如何保证 Kafka 消息的顺序消费？ Q12：消费者如何实现幂等性消费？ Q13：消息积压如何紧急处理？（结合 SRM 项目） Q14：Kafka 事务消息原理？Exactly Once 如何保证？ Q15：死信队列（DLQ）在项目中的应用     一、Kafka 核心概念Q1：Kafka 的整体架构？核心组件关系？核心考点：Broker&#x2F;Topic&#x2F;Partition&#x2F;Replica&#x2F;Produc...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Java基础与并发面试考题</div></div><div class="info-2"><div class="info-item-1">01 - Java基础与并发 · 高频面试考题背诵指南 目录 Q1：ArrayList 和 LinkedList 的区别？分别适用什么场景？ Q2：HashMap 底层数据结构是什么？JDK8 做了哪些优化？ Q3：HashMap 的扩容机制？为什么容量必须是 2 的幂次方？ Q4：HashMap 为何线程不安全？JDK7 的死链问题如何发生的？ Q5：ConcurrentHashMap 在 JDK7 和 JDK8 中的实现有何不同？ Q6：HashSet 的底层原理？如何保证元素不重复？ Q7：volatile 关键字的作用？能保证原子性吗？ Q8：synchronized 的实现原理？对象锁和类锁的区别？ Q9：锁升级的过程（无锁→偏向锁→轻量级锁→重量级锁）？ Q10：synchronized 和 ReentrantLock 有什么区别？ Q11：Java 内存模型（JMM）是什么？happens-before 原则有哪些？ Q12：什么是 AQS？它的核心原理是什么？ Q13：CountDownLatch、CyclicBarrier、Semaphore 的使用场景？ Q1...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E9%A1%B9%E7%9B%AESTAR%E4%B8%8E%E5%9C%BA%E6%99%AF%E9%A2%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="项目STAR与场景题面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">项目STAR与场景题面试考题</div></div><div class="info-2"><div class="info-item-1">09 - 项目STAR自述与高频场景题 · 面试通关指南 目录 一、四大项目 STAR 完整自述 项目一：医院后台管理系统（医博系统） 项目二：美团智能化餐饮 SaaS 管家运营引擎 项目三：招商银行分布式核心流程调度中台 项目四：SRM 采购端全链路自动化管理平台   二、技术底层深度挖掘 Q1：动态审批流引擎如何设计（责任链 + 数据库配置）？   三、高频场景题答辩 场景题 1：SRM 询价 Kafka 消息大量积压，如何处理？ 场景题 2：招行中台下游服务假死导致连接池耗尽，如何快速恢复？ 场景题 3：如何设计一个通用的分布式 ID 生成方案？ 场景题 4：秒杀系统的完整设计 场景题 5：微服务接口幂等性如何保证？ 场景题 6：如何设计支持亿级数据的定时任务调度系统？       一、四大项目 STAR 完整自述项目一：医院后台管理系统（医博系统，2020.06 ~ 2022.08）STAR 自述模板：  S（背景）：我毕业后第一份工作是在医博系统技术（深圳），参与开发面向中小型私立医院的数字化管理后台，系统涵盖挂号预约、就诊结算积分核算、药品管理、患者病历管理等模块，服...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="计算机网络基础面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282751_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">计算机网络基础面试考题</div></div><div class="info-2"><div class="info-item-1">08 - 计算机网络基础 · 高频面试考题背诵指南 目录 Q1：TCP 三次握手过程？为什么是三次而不是两次或四次？ Q2：TCP 四次挥手过程？为什么是四次？TIME_WAIT 为什么是 2MSL？ Q3：TCP 如何保证可靠传输？ Q4：TCP 拥塞控制的四个阶段 Q5：HTTP 1.0 &#x2F; 1.1 &#x2F; 2.0 &#x2F; 3.0 的核心区别 Q6：HTTPS 的握手过程？（TLS 1.2 &#x2F; 1.3） Q7：BIO &#x2F; NIO &#x2F; AIO 的区别？ Q8：select &#x2F; poll &#x2F; epoll 区别？ Q9：Cookie、Session、JWT &#x2F; Token 的区别？ Q10：浏览器输入 URL 后发生了什么？     一、TCPQ1：TCP 三次握手过程？为什么是三次而不是两次或四次？核心考点：握手的目的（同步序列号 + 验证双方收发能力）决定必须是三次。 背诵话术：  三次握手的过程：  客户端 → 服务端：SYN = 1, seq = x（客户端进入 SYN-SENT 状态） 服务...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Live Rainy</div><div class="author-info-description">个人技术博客</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/foreverhu1998"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">LiveRainy's Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#02-Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1-%C2%B7-%E9%AB%98%E9%A2%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98%E8%83%8C%E8%AF%B5%E6%8C%87%E5%8D%97"><span class="toc-number">1.</span> <span class="toc-text">02 - Spring框架与微服务 · 高频面试考题背诵指南</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81Spring-Core"><span class="toc-number">1.2.</span> <span class="toc-text">一、Spring Core</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q1%EF%BC%9ASpring-IOC-%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%9FBeanFactory-%E5%92%8C-ApplicationContext-%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.2.1.</span> <span class="toc-text">Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q2%EF%BC%9ASpring-Bean-%E7%9A%84%E5%AE%8C%E6%95%B4%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">1.2.2.</span> <span class="toc-text">Q2：Spring Bean 的完整生命周期</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q3%EF%BC%9ASpring-AOP-%E5%8E%9F%E7%90%86%EF%BC%9FJDK-%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E5%92%8C-CGLIB-%E4%BB%A3%E7%90%86%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.2.3.</span> <span class="toc-text">Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q4%EF%BC%9ASpring-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E5%BE%AA%E7%8E%AF%E4%BE%9D%E8%B5%96%EF%BC%9F%E4%B8%89%E7%BA%A7%E7%BC%93%E5%AD%98%E5%90%84%E8%87%AA%E7%9A%84%E4%BD%9C%E7%94%A8%EF%BC%9F"><span class="toc-number">1.2.4.</span> <span class="toc-text">Q4：Spring 如何解决循环依赖？三级缓存各自的作用？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q5%EF%BC%9A-Autowired-%E5%92%8C-Resource-%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.2.5.</span> <span class="toc-text">Q5：@Autowired 和 @Resource 的区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q6%EF%BC%9A-Transactional-%E5%A4%B1%E6%95%88%E7%9A%84%E5%9C%BA%E6%99%AF%EF%BC%88%E8%87%B3%E5%B0%91-5-%E7%A7%8D%EF%BC%89"><span class="toc-number">1.2.6.</span> <span class="toc-text">Q6：@Transactional 失效的场景（至少 5 种）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q7%EF%BC%9ASpring-%E4%BA%8B%E5%8A%A1%E7%9A%84-7-%E7%A7%8D%E4%BC%A0%E6%92%AD%E8%A1%8C%E4%B8%BA"><span class="toc-number">1.2.7.</span> <span class="toc-text">Q7：Spring 事务的 7 种传播行为</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81SpringBoot"><span class="toc-number">1.3.</span> <span class="toc-text">二、SpringBoot</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q8%EF%BC%9ASpringBoot-%E8%87%AA%E5%8A%A8%E8%A3%85%E9%85%8D%E5%8E%9F%E7%90%86%EF%BC%9F-SpringBootApplication-%E5%81%9A%E4%BA%86%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">1.3.1.</span> <span class="toc-text">Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q9%EF%BC%9AMyBatis-%E7%9A%84%E4%B8%80%E7%BA%A7%E7%BC%93%E5%AD%98%E5%92%8C%E4%BA%8C%E7%BA%A7%E7%BC%93%E5%AD%98%EF%BC%9F%E5%88%86%E5%88%AB%E6%9C%89%E4%BB%80%E4%B9%88%E5%9D%91%EF%BC%9F"><span class="toc-number">1.3.2.</span> <span class="toc-text">Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q10%EF%BC%9AMyBatis-%E7%9A%84-%E5%92%8C-%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.3.3.</span> <span class="toc-text">Q10：MyBatis 的 #{} 和 ${} 的区别？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Spring-Cloud-%E5%BE%AE%E6%9C%8D%E5%8A%A1"><span class="toc-number">1.4.</span> <span class="toc-text">三、Spring Cloud 微服务</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q11%EF%BC%9ANacos-%E6%B3%A8%E5%86%8C%E4%B8%AD%E5%BF%83%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%EF%BC%9F%E5%92%8C-Eureka-%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.4.1.</span> <span class="toc-text">Q11：Nacos 注册中心工作原理？和 Eureka 的区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q12%EF%BC%9ASentinel-%E7%9A%84%E9%99%90%E6%B5%81%E7%AE%97%E6%B3%95%E5%92%8C%E7%86%94%E6%96%AD%E7%AD%96%E7%95%A5"><span class="toc-number">1.4.2.</span> <span class="toc-text">Q12：Sentinel 的限流算法和熔断策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q13%EF%BC%9ASeata-%E7%9A%84-TCC-%E6%A8%A1%E5%BC%8F%E5%8E%9F%E7%90%86%EF%BC%9FAT-%E6%A8%A1%E5%BC%8F%E5%92%8C-TCC-%E7%9A%84%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.4.3.</span> <span class="toc-text">Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q14%EF%BC%9ATCC-%E6%A8%A1%E5%BC%8F%E7%9A%84%E4%B8%89%E5%A4%A7%E5%BC%82%E5%B8%B8%E5%9C%BA%E6%99%AF%EF%BC%88%E7%A9%BA%E5%9B%9E%E6%BB%9A%E3%80%81%E6%82%AC%E6%8C%82%E3%80%81%E5%B9%82%E7%AD%89%EF%BC%89"><span class="toc-number">1.4.4.</span> <span class="toc-text">Q14：TCC 模式的三大异常场景（空回滚、悬挂、幂等）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q15%EF%BC%9A%E5%8F%AF%E9%9D%A0%E6%B6%88%E6%81%AF%E6%9C%80%E7%BB%88%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%88%E6%9C%AC%E5%9C%B0%E6%B6%88%E6%81%AF%E8%A1%A8%E6%96%B9%E6%A1%88%EF%BC%89"><span class="toc-number">1.4.5.</span> <span class="toc-text">Q15：可靠消息最终一致性（本地消息表方案）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q16%EF%BC%9A2PC-3PC-TCC-Saga-%E5%8F%AF%E9%9D%A0%E6%B6%88%E6%81%AF-%E4%BA%94%E5%A4%A7%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94"><span class="toc-number">1.4.6.</span> <span class="toc-text">Q16：2PC &#x2F; 3PC &#x2F; TCC &#x2F; Saga &#x2F; 可靠消息 五大方案对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q17%EF%BC%9AFeign-%E7%9A%84%E8%B6%85%E6%97%B6%E3%80%81%E9%87%8D%E8%AF%95%E4%B8%8E%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E5%8E%9F%E7%90%86%EF%BC%9F"><span class="toc-number">1.4.7.</span> <span class="toc-text">Q17：Feign 的超时、重试与负载均衡原理？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q18%EF%BC%9ASpring-Cloud-Gateway-%E6%A0%B8%E5%BF%83%E6%9E%B6%E6%9E%84%E4%B8%8E%E5%BA%94%E7%94%A8%EF%BC%9F"><span class="toc-number">1.4.8.</span> <span class="toc-text">Q18：Spring Cloud Gateway 核心架构与应用？</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java基础与并发面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题">Java基础与并发面试考题</a><time datetime="2026-06-08T14:09:00.000Z" title="发表于 2026-06-08 22:09:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spring框架与微服务面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题">Spring框架与微服务面试考题</a><time datetime="2026-06-08T14:08:00.000Z" title="发表于 2026-06-08 22:08:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282011_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MySQL数据库面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题">MySQL数据库面试考题</a><time datetime="2026-06-08T14:07:00.000Z" title="发表于 2026-06-08 22:07:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Redis与本地缓存面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题">Redis与本地缓存面试考题</a><time datetime="2026-06-08T14:06:00.000Z" title="发表于 2026-06-08 22:06:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kafka消息队列面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题">Kafka消息队列面试考题</a><time datetime="2026-06-08T14:05:00.000Z" title="发表于 2026-06-08 22:05:00">2026-06-08</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/5120x2880-px-artwork-fiction-nebula-science-space-1819213-wallhere.com.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Live Rainy</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.2</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.2"></script><script src="/js/main.js?v=5.5.2"></script><div class="js-pjax"></div><script async data-pjax src="https://cn.vercount.one/js"></script></div></body></html>

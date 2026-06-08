@@ -1,0 +1,505 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Redis与本地缓存面试考题 | 活在下雨天的博客</title><meta name="author" content="Live Rainy"><meta name="copyright" content="Live Rainy"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="包含Redis底层数据结构、缓存一致性、分布式锁Redisson及多级缓存本地缓存的深度面试背诵指南。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis与本地缓存面试考题">
+<meta property="og:url" content="https://www.liverainy.online/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html">
+<meta property="og:site_name" content="活在下雨天的博客">
+<meta property="og:description" content="包含Redis底层数据结构、缓存一致性、分布式锁Redisson及多级缓存本地缓存的深度面试背诵指南。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png">
+<meta property="article:published_time" content="2026-06-08T14:06:00.000Z">
+<meta property="article:modified_time" content="2026-06-08T15:09:09.586Z">
+<meta property="article:author" content="Live Rainy">
+<meta property="article:tag" content="Redis">
+<meta property="article:tag" content="缓存">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Redis与本地缓存面试考题",
+  "url": "https://www.liverainy.online/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/",
+  "image": "https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png",
+  "datePublished": "2026-06-08T14:06:00.000Z",
+  "dateModified": "2026-06-08T15:09:09.586Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Live Rainy",
+      "url": "https://www.liverainy.online"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg"><link rel="canonical" href="https://www.liverainy.online/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css?v=5.5.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Redis与本地缓存面试考题',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p2.jpg" alt="Logo"></a><a class="nav-page-title" href="/"><span class="site-name">Redis与本地缓存面试考题</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Redis与本地缓存面试考题</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-08T14:06:00.000Z" title="发表于 2026-06-08 22:06:00">2026-06-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-08T15:09:09.586Z" title="更新于 2026-06-08 23:09:09">2026-06-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%A2%E8%AF%95%E5%A4%8D%E4%B9%A0/">面试复习</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="04-Redis与本地缓存-·-高频面试考题背诵指南"><a href="#04-Redis与本地缓存-·-高频面试考题背诵指南" class="headerlink" title="04 - Redis与本地缓存 · 高频面试考题背诵指南"></a>04 - Redis与本地缓存 · 高频面试考题背诵指南</h1><hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#q1redis-%E4%BA%94%E7%A7%8D%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%8F%8A%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0">Q1：Redis 五种核心数据类型及底层实现</a></li>
+<li><a href="#q2zset-%E7%9A%84%E8%B7%B3%E8%A1%A8skiplist%E5%8E%9F%E7%90%86">Q2：ZSet 的跳表（skiplist）原理</a></li>
+<li><a href="#q3redis-%E5%B8%B8%E8%A7%81%E4%B8%9A%E5%8A%A1%E5%9C%BA%E6%99%AF%E5%AE%9E%E7%8E%B0">Q3：Redis 常见业务场景实现</a></li>
+<li><a href="#q4rdb-%E5%92%8C-aof-%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9%E5%AF%B9%E6%AF%94%E7%94%9F%E4%BA%A7%E4%B8%AD%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9">Q4：RDB 和 AOF 的优缺点对比？生产中如何选择？</a></li>
+<li><a href="#q5aof-%E7%9A%84%E4%B8%89%E7%A7%8D%E5%86%99%E5%9B%9E%E7%AD%96%E7%95%A5">Q5：AOF 的三种写回策略</a></li>
+<li><a href="#q6redis-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86">Q6：Redis 主从复制原理</a></li>
+<li><a href="#q7redis-sentinel%E5%93%A8%E5%85%B5%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">Q7：Redis Sentinel（哨兵）的工作原理</a></li>
+<li><a href="#q8redis-cluster-%E5%88%86%E7%89%87%E9%9B%86%E7%BE%A4%E5%8E%9F%E7%90%86">Q8：Redis Cluster 分片集群原理</a></li>
+<li><a href="#q9redis-%E8%BF%87%E6%9C%9F%E9%94%AE%E5%88%A0%E9%99%A4%E7%AD%96%E7%95%A5">Q9：Redis 过期键删除策略</a></li>
+<li><a href="#q10redis-%E5%86%85%E5%AD%98%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5">Q10：Redis 内存淘汰策略</a></li>
+<li><a href="#q11%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F%E5%87%BB%E7%A9%BF%E9%9B%AA%E5%B4%A9%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88">Q11：缓存穿透&#x2F;击穿&#x2F;雪崩的区别和解决方案</a></li>
+<li><a href="#q12%E7%BC%93%E5%AD%98%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%E7%BB%93%E5%90%88%E6%8B%9B%E8%A1%8C%E9%A1%B9%E7%9B%AE">Q12：缓存与数据库双写一致性（结合招行项目）</a></li>
+<li><a href="#q13redisson-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81-watchdog-%E6%9C%BA%E5%88%B6">Q13：Redisson 分布式锁 WatchDog 机制</a></li>
+<li><a href="#q14redis-pipeline-%E5%92%8C-lua-%E8%84%9A%E6%9C%AC%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF">Q14：Redis Pipeline 和 Lua 脚本的使用场景</a></li>
+<li><a href="#q15caffeine-%E7%9A%84-w-tinylfu-%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86">Q15：Caffeine 的 W-TinyLFU 算法原理</a></li>
+<li><a href="#q16%E5%88%86%E5%B8%83%E5%BC%8F%E5%A4%9A%E8%8A%82%E7%82%B9%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7%E7%BB%93%E5%90%88%E6%8B%9B%E8%A1%8C%E9%A1%B9%E7%9B%AE">Q16：分布式多节点本地缓存一致性（结合招行项目）</a></li>
+<li><a href="#q17redisson-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8E%9F%E7%90%86%E4%B8%8E%E7%BA%A2%E9%94%81redlock%E4%BA%89%E8%AE%AE">Q17：Redisson 分布式锁的可重入原理与红锁（Redlock）争议</a></li>
+</ul>
+<hr>
+<span id="more"></span>
+
+<h2 id="一、Redis-数据结构与使用场景"><a href="#一、Redis-数据结构与使用场景" class="headerlink" title="一、Redis 数据结构与使用场景"></a>一、Redis 数据结构与使用场景</h2><h3 id="Q1：Redis-五种核心数据类型及底层实现"><a href="#Q1：Redis-五种核心数据类型及底层实现" class="headerlink" title="Q1：Redis 五种核心数据类型及底层实现"></a>Q1：Redis 五种核心数据类型及底层实现</h3><p><strong>核心考点</strong>：每种数据类型的底层数据结构，小数据量时的 ziplist 压缩优化。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Redis 有 5 种核心数据类型，每种类型底层会根据数据量大小选择不同的编码结构：</p>
+<table>
+<thead>
+<tr>
+<th>数据类型</th>
+<th>小数据量时</th>
+<th>大数据量时</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>String</strong></td>
+<td>int（整数）&#x2F; embstr（≤44字节）</td>
+<td>raw（SDS 简单动态字符串）</td>
+</tr>
+<tr>
+<td><strong>Hash</strong></td>
+<td>ziplist（压缩列表）</td>
+<td>hashtable（哈希表）</td>
+</tr>
+<tr>
+<td><strong>List</strong></td>
+<td>ziplist</td>
+<td>quicklist（双向链表 + ziplist）</td>
+</tr>
+<tr>
+<td><strong>Set</strong></td>
+<td>intset（整数集合，纯整数时）</td>
+<td>hashtable</td>
+</tr>
+<tr>
+<td><strong>ZSet（有序集合）</strong></td>
+<td>ziplist</td>
+<td>skiplist（跳表）+ hashtable</td>
+</tr>
+</tbody></table>
+<p><strong>SDS（Simple Dynamic String）</strong> 相比 C 字符串的优势：记录了字符串长度（O(1) 获取），空间预分配和惰性释放避免频繁内存分配，且是二进制安全的（可存储 <code>\0</code> 字符）。</p>
+<p><strong>ziplist（压缩列表）</strong>：连续内存的紧凑结构，节省内存，但插入删除需要内存重分配，适合数据量少（默认元素数 &lt; 128，单个值 &lt; 64 字节）的情况。</p>
+<p><strong>💡 Redis 7.0 版本变更（ziplist 替换为 listpack）</strong>：<br>在 Redis 7.0 中，官方将所有的 <code>ziplist</code> 编码完全替换为 <code>listpack</code>（紧凑列表）。主要原因在于 <code>ziplist</code> 内部存储了前一个节点占用的字节数（<code>prevlen</code>），当插入或修改元素时，可能会触发“连锁更新”（Cascade Update），严重拖慢性能。而 <code>listpack</code> 摒弃了 <code>prevlen</code> 的设计，仅在节点尾部记录当前节点的长度，从而彻底避免了连锁更新问题。</p>
+</blockquote>
+<hr>
+<h3 id="Q2：ZSet-的跳表（skiplist）原理"><a href="#Q2：ZSet-的跳表（skiplist）原理" class="headerlink" title="Q2：ZSet 的跳表（skiplist）原理"></a>Q2：ZSet 的跳表（skiplist）原理</h3><p><strong>核心考点</strong>：跳表的多层索引结构，查询&#x2F;插入时间复杂度 O(logN)，为什么不用红黑树。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>跳表（Skip List）</strong> 是一种以空间换时间的多层链表结构。底层是一条包含所有元素的有序链表，上层是下层的”稀疏索引”——每隔若干个节点提升一个节点到上层，形成多级索引。</p>
+<p><strong>查询过程</strong>：从最高层的索引链表开始，向右比较大小，如果当前节点值大于目标，则下降到下一层，继续向右比较，直到最底层精确定位。平均时间复杂度 <strong>O(logN)</strong>。</p>
+<p><strong>ZSet 为什么同时持有 skiplist 和 hashtable</strong>：skiplist 支持按分数范围查询（如 <code>ZRANGEBYSCORE</code>），hashtable 支持按成员名精确查找分数（如 <code>ZSCORE</code>，O(1)）。两者互补，构成 ZSet 强大的双向查询能力。</p>
+<p><strong>ZSet 为什么用跳表而不用红黑树</strong>：</p>
+<ol>
+<li>跳表的<strong>范围查询</strong>（<code>ZRANGEBYSCORE</code>）更高效，只需在底层链表上顺序遍历即可；红黑树的范围查询需要中序遍历，实现复杂。</li>
+<li>跳表实现更简单，代码更易维护和调试。</li>
+<li>跳表的并发修改（无锁化）比平衡树更容易实现。</li>
+</ol>
+</blockquote>
+<hr>
+<h3 id="Q3：Redis-常见业务场景实现"><a href="#Q3：Redis-常见业务场景实现" class="headerlink" title="Q3：Redis 常见业务场景实现"></a>Q3：Redis 常见业务场景实现</h3><p><strong>核心考点</strong>：各数据类型对应最典型的业务用途。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<ul>
+<li><p><strong>排行榜（ZSet）</strong>：以用户 ID 为 member，积分为 score，存入 ZSet。<code>ZADD rank 100 user1</code>，<code>ZREVRANGEBYSCORE</code> 获取 Top N 排行。医博系统的医生接诊量排行用的就是这个方案。</p>
+</li>
+<li><p><strong>计数器（String + INCR）</strong>：Redis 的 <code>INCR</code>&#x2F;<code>INCRBY</code> 是原子操作，用于统计接口调用次数、点赞数等，天然防并发。</p>
+</li>
+<li><p><strong>分布式锁（String + SET NX EX）</strong>：<code>SET lock_key value NX EX 30</code>，NX 保证只有一个线程能设置成功，EX 设置过期时间防死锁。生产中用 Redisson 封装，自动处理 WatchDog 续期。</p>
+</li>
+<li><p><strong>接口限流（String + INCR &#x2F; Lua + 滑动窗口）</strong>：对每个用户 IP 的请求次数计数，超过阈值则拒绝。美团开放平台的 Redis Lua 脚本限流就是这个思路。</p>
+</li>
+<li><p><strong>购物车（Hash）</strong>：以用户 ID 为 key，商品 ID 为 field，数量为 value。<code>HSET cart:user1 item:101 3</code>，<code>HGETALL cart:user1</code> 获取整个购物车。</p>
+</li>
+<li><p><strong>消息队列（List）</strong>：<code>LPUSH</code> 生产，<code>BRPOP</code> 阻塞消费，实现简单的消息队列。</p>
+</li>
+<li><p><strong>社交关注（Set）</strong>：存储用户的关注列表和粉丝列表，利用 <code>SINTER</code> 求两个用户共同关注的人。</p>
+</li>
+<li><p><strong>Session 共享（String）</strong>：分布式系统中将用户 Session 存入 Redis，各服务节点从 Redis 统一读取，解决多节点 Session 不共享问题。</p>
+</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="二、Redis-持久化"><a href="#二、Redis-持久化" class="headerlink" title="二、Redis 持久化"></a>二、Redis 持久化</h2><h3 id="Q4：RDB-和-AOF-的优缺点对比？生产中如何选择？"><a href="#Q4：RDB-和-AOF-的优缺点对比？生产中如何选择？" class="headerlink" title="Q4：RDB 和 AOF 的优缺点对比？生产中如何选择？"></a>Q4：RDB 和 AOF 的优缺点对比？生产中如何选择？</h3><p><strong>核心考点</strong>：两种持久化的触发方式、恢复速度、数据安全性。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>RDB（Redis DataBase Backup，快照持久化）</strong>：</p>
+<ul>
+<li><strong>原理</strong>：在满足配置的触发条件时（如 900s 内有 1 次写操作），Redis 调用 <code>BGSAVE</code> 命令，<code>fork()</code> 出一个子进程，子进程将当前内存中的全量数据生成一个紧凑的 <code>.rdb</code> 二进制文件，父进程继续处理请求。</li>
+<li><strong>优点</strong>：恢复速度极快（直接加载二进制文件），适合灾备和全量数据迁移，RDB 文件体积小。</li>
+<li><strong>缺点</strong>：两次快照之间的数据可能丢失（最多丢几分钟的数据）；<code>fork()</code> 时有短暂的 STW，对实时性要求高的场景有影响。</li>
+</ul>
+<p><strong>AOF（Append Only File，追加日志持久化）</strong>：</p>
+<ul>
+<li><strong>原理</strong>：将每一条写命令追加写入 AOF 日志文件，Redis 重启时重放所有命令来恢复数据。</li>
+<li><strong>优点</strong>：数据丢失风险低，默认 <code>everysec</code> 模式最多丢 1 秒数据；日志可读，可做数据审计。</li>
+<li><strong>缺点</strong>：AOF 文件体积大（记录所有操作，有大量冗余），恢复速度比 RDB 慢；AOF 重写（<code>BGREWRITEAOF</code>）时也需要 fork 子进程。</li>
+</ul>
+<p><strong>生产选择</strong>：优先开启 <strong>RDB + AOF 混合持久化</strong>（Redis 4.0+），AOF 重写时先生成 RDB 快照写入 AOF 文件，之后追加写操作。这样既有 RDB 的快速恢复，又有 AOF 的数据完整性，是生产的最佳实践。</p>
+</blockquote>
+<hr>
+<h3 id="Q5：AOF-的三种写回策略"><a href="#Q5：AOF-的三种写回策略" class="headerlink" title="Q5：AOF 的三种写回策略"></a>Q5：AOF 的三种写回策略</h3><p><strong>核心考点</strong>：性能和数据安全性的取舍，<code>everysec</code> 是生产默认选择。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>AOF 的写回策略控制写命令何时从操作系统的 Page Cache 刷入磁盘（<code>fsync</code>）：</p>
+<ul>
+<li><strong><code>always</code>（同步写）</strong>：每条写命令执行后立即 <code>fsync</code> 刷盘。数据丢失风险最低（最多丢失 1 条命令），但 IO 频繁，性能最差，对磁盘压力大。适合对数据安全性要求极高的金融场景。</li>
+<li><strong><code>everysec</code>（每秒写，生产默认推荐）</strong>：每秒执行一次 <code>fsync</code>，由后台线程完成。最多丢失 1 秒的数据，在性能和数据安全性之间取得了最佳平衡，是<strong>生产环境的首选</strong>。</li>
+<li><strong><code>no</code>（操作系统控制）</strong>：Redis 不主动 <code>fsync</code>，由操作系统决定何时刷盘（通常 30 秒左右）。性能最好，但丢失数据量最多，不推荐用于重要业务。</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="三、Redis-高可用"><a href="#三、Redis-高可用" class="headerlink" title="三、Redis 高可用"></a>三、Redis 高可用</h2><h3 id="Q6：Redis-主从复制原理"><a href="#Q6：Redis-主从复制原理" class="headerlink" title="Q6：Redis 主从复制原理"></a>Q6：Redis 主从复制原理</h3><p><strong>核心考点</strong>：全量复制（psync）和增量复制（Replication Buffer），复制积压缓冲区。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>全量复制（首次连接或重连偏移量差异过大）</strong>：</p>
+<ol>
+<li>从库向主库发送 <code>psync replicationid offset</code> 命令（replicationid 为主库复制 ID，首次为 <code>?</code>）。</li>
+<li>主库执行 <code>BGSAVE</code> 生成 RDB 快照，将快照发送给从库，从库接收后清空旧数据，加载 RDB 文件。</li>
+<li>主库将生成 RDB 期间新产生的写命令缓存在 <code>Replication Buffer</code> 中，RDB 传输完后一并发送给从库执行。</li>
+</ol>
+<p><strong>增量复制（断线重连，且偏移量在复制积压缓冲区范围内）</strong>：</p>
+<ol>
+<li>从库重连后发送自己记录的 <code>replication offset</code>（复制偏移量）。</li>
+<li>主库检查该偏移量是否在 <strong>Replication Backlog Buffer（复制积压缓冲区，默认 1MB 的环形缓冲区）</strong> 中。</li>
+<li>如果在，只需将缓冲区中从偏移量开始的命令发给从库（增量复制），大大减少了全量复制的开销。</li>
+<li>如果不在（主库的 buffer 已被覆盖），则触发全量复制。</li>
+</ol>
+</blockquote>
+<hr>
+<h3 id="Q7：Redis-Sentinel（哨兵）的工作原理"><a href="#Q7：Redis-Sentinel（哨兵）的工作原理" class="headerlink" title="Q7：Redis Sentinel（哨兵）的工作原理"></a>Q7：Redis Sentinel（哨兵）的工作原理</h3><p><strong>核心考点</strong>：哨兵的三个职责（监控&#x2F;通知&#x2F;自动故障转移），主观下线和客观下线，Leader 选举。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Sentinel 的三大职责</strong>：</p>
+<ol>
+<li><strong>监控（Monitoring）</strong>：哨兵节点每秒向主节点、从节点和其他哨兵节点发送 PING 命令，检测它们是否在线。</li>
+<li><strong>通知（Notification）</strong>：当发现某个节点出现问题，哨兵会通过发布订阅（<code>pub/sub</code>）通知客户端和其他哨兵。</li>
+<li><strong>自动故障转移（Automatic Failover）</strong>：主节点宕机时，哨兵自动选举新的主节点，并通知从节点和客户端更新连接。</li>
+</ol>
+<p><strong>故障转移流程</strong>：</p>
+<ol>
+<li><strong>主观下线（SDOWN）</strong>：某个哨兵判断主节点超时（默认 30s 无响应），标记为”主观下线”。</li>
+<li><strong>客观下线（ODOWN）</strong>：该哨兵向其他哨兵询问（<code>SENTINEL is-master-down-by-addr</code>），当超过半数（<code>quorum</code> 配置）的哨兵都认为主节点下线，才标记为”客观下线”，防止单个哨兵误判（如网络分区）。</li>
+<li><strong>Leader 选举</strong>：哨兵之间通过 Raft 算法选举出一个 Leader 哨兵来主导故障转移。</li>
+<li><strong>新主节点选择</strong>：Leader 哨兵从从节点中选择最优的一个（优先级高、复制进度最靠近主库的）晋升为新主节点，修改其他从节点的复制目标，并通知客户端。</li>
+</ol>
+</blockquote>
+<hr>
+<h3 id="Q8：Redis-Cluster-分片集群原理"><a href="#Q8：Redis-Cluster-分片集群原理" class="headerlink" title="Q8：Redis Cluster 分片集群原理"></a>Q8：Redis Cluster 分片集群原理</h3><p><strong>核心考点</strong>：16384 个 Hash Slot、CRC16 哈希分片、MOVED 和 ASK 重定向、Gossip 协议。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>数据分片</strong>：Redis Cluster 将所有键的空间划分为 <strong>16384 个 Hash Slot（哈希槽）</strong>，每个 Key 通过 <code>CRC16(key) % 16384</code> 计算得到它所属的槽位，每个槽位分配给某个主节点负责。这样数据就被均匀分散到各个节点上，每个节点只负责一部分数据。</p>
+<p><strong>为什么是 16384 个槽</strong>：16384 &#x3D; 2^14，心跳报文中传输的槽信息用 bitmap 表示，16384 个槽只需要 2KB，既够用又不会让心跳包太大（如果是 65536 个槽则需要 8KB）。</p>
+<p><strong>请求重定向</strong>：客户端可以连接集群中任意节点，如果访问的 Key 不在当前节点：</p>
+<ul>
+<li><strong><code>MOVED</code> 重定向</strong>：Key 对应的槽不在当前节点，返回 <code>MOVED slotId ip:port</code>，客户端应永久更新本地槽路由表并重定向到正确节点。</li>
+<li><strong><code>ASK</code> 重定向</strong>：在槽迁移过程中，数据可能部分在旧节点、部分已迁移到新节点，返回 <code>ASK</code> 表示临时重定向，客户端只是此次请求去新节点查询，不更新本地路由表。</li>
+</ul>
+<p><strong>节点间通信</strong>：集群内各节点通过 <strong>Gossip 协议</strong> 相互传播节点状态信息（上线&#x2F;下线&#x2F;槽信息变更），最终达到全集群状态一致，无需中心化的协调节点。</p>
+</blockquote>
+<hr>
+<h2 id="四、Redis-过期与淘汰"><a href="#四、Redis-过期与淘汰" class="headerlink" title="四、Redis 过期与淘汰"></a>四、Redis 过期与淘汰</h2><h3 id="Q9：Redis-过期键删除策略"><a href="#Q9：Redis-过期键删除策略" class="headerlink" title="Q9：Redis 过期键删除策略"></a>Q9：Redis 过期键删除策略</h3><p><strong>核心考点</strong>：定期删除 + 惰性删除的组合策略，为何不用定时删除。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Redis 采用<strong>定期删除 + 惰性删除</strong>的组合策略：</p>
+<ul>
+<li><p><strong>惰性删除（Lazy Expiration）</strong>：Key 过期后<strong>不立即删除</strong>，只有当客户端访问该 Key 时，Redis 才检查它是否过期，如果已过期则删除并返回 null。优点：对 CPU 影响最小；缺点：大量过期 Key 没有被访问，会一直占用内存。</p>
+</li>
+<li><p><strong>定期删除（Periodic Expiration）</strong>：Redis 每隔 100ms（<code>hz</code> 参数控制）随机抽取一批设置了过期时间的 Key 进行检查，删除其中已过期的 Key。这是一种后台主动清理机制，补充了惰性删除的不足。</p>
+</li>
+</ul>
+<p><strong>为什么不用定时删除</strong>：为每个 Key 都创建一个定时器，过期时立即删除，虽然内存最友好，但大量定时器会严重消耗 CPU 资源，影响 Redis 的服务能力。</p>
+<p><strong>淘汰策略是最后一道防线</strong>：如果以上两种策略还不够（大量过期 Key 没被及时清理），当内存达到 <code>maxmemory</code> 上限时，Redis 的内存淘汰策略（如 <code>allkeys-lru</code>）会强制淘汰部分 Key 来腾出内存。</p>
+</blockquote>
+<hr>
+<h3 id="Q10：Redis-内存淘汰策略"><a href="#Q10：Redis-内存淘汰策略" class="headerlink" title="Q10：Redis 内存淘汰策略"></a>Q10：Redis 内存淘汰策略</h3><p><strong>核心考点</strong>：8 种策略，生产中最常用 <code>allkeys-lru</code>。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Redis 提供 8 种内存淘汰策略（通过 <code>maxmemory-policy</code> 配置）：</p>
+<ul>
+<li><strong><code>noeviction</code>（默认）</strong>：内存满时拒绝所有写请求，直接报错。适合不允许丢失任何数据的场景（如数据库），但会导致业务报错。</li>
+<li><strong><code>allkeys-lru</code>（生产最常用）</strong>：从所有 Key 中淘汰最近最少使用的 Key（LRU 算法）。适合缓存场景，是绝大多数业务的推荐选择。</li>
+<li><strong><code>volatile-lru</code></strong>：只对设置了过期时间的 Key 进行 LRU 淘汰。保留了没有过期时间的 Key（可能是重要数据）。</li>
+<li><strong><code>allkeys-lfu</code></strong>（Redis 4.0+）：从所有 Key 中淘汰访问频率最低的 Key（LFU 算法）。比 LRU 更精准，适合访问模式稳定的场景。</li>
+<li><strong><code>volatile-lfu</code></strong>：只对有过期时间的 Key 进行 LFU 淘汰。</li>
+<li><strong><code>allkeys-random</code></strong>：随机淘汰所有 Key，适合 Key 访问频率差不多均匀的场景。</li>
+<li><strong><code>volatile-random</code></strong>：随机淘汰有过期时间的 Key。</li>
+<li><strong><code>volatile-ttl</code></strong>：优先淘汰剩余存活时间（TTL）最短的 Key。</li>
+</ul>
+<p><strong>招行调度中台的选择</strong>：业务规则缓存是读多写少的热数据，使用 <code>allkeys-lru</code> 配合合理的 <code>maxmemory</code> 设置，让 Redis 自动淘汰冷数据，无需手动管理。</p>
+</blockquote>
+<hr>
+<h2 id="五、缓存高频问题"><a href="#五、缓存高频问题" class="headerlink" title="五、缓存高频问题"></a>五、缓存高频问题</h2><h3 id="Q11：缓存穿透-击穿-雪崩的区别和解决方案"><a href="#Q11：缓存穿透-击穿-雪崩的区别和解决方案" class="headerlink" title="Q11：缓存穿透&#x2F;击穿&#x2F;雪崩的区别和解决方案"></a>Q11：缓存穿透&#x2F;击穿&#x2F;雪崩的区别和解决方案</h3><p><strong>核心考点</strong>：三种问题的本质、场景和对应的解决方案。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>1. 缓存穿透（查询不存在的数据）</strong>：</p>
+<ul>
+<li><strong>现象</strong>：大量请求查询一个数据库中不存在的 Key（如 <code>id = -1</code>），缓存中也没有，每次都直接穿透到数据库，引起数据库压力激增。恶意攻击者可以利用这一点对数据库发起 DDoS。</li>
+<li><strong>解决方案</strong>：<ol>
+<li><strong>布隆过滤器（BloomFilter）</strong>：将所有存在的数据的 Key 加入布隆过滤器，请求时先判断 Key 是否存在，不存在直接拒绝。布隆过滤器有小概率误判（误判为存在），但不会漏判（存在的一定判存在）。</li>
+<li><strong>空值缓存</strong>：即使数据库查不到数据，也在 Redis 中缓存一个 null 值（设置短过期时间，如 5 分钟），防止反复穿透。</li>
+</ol>
+</li>
+</ul>
+<p><strong>2. 缓存击穿（热点 Key 过期瞬间大量并发）</strong>：</p>
+<ul>
+<li><strong>现象</strong>：一个热点 Key（如某明星微博）在缓存中过期的瞬间，大量并发请求同时涌向数据库，导致数据库被打崩。</li>
+<li><strong>解决方案</strong>：<ol>
+<li><strong>互斥锁（Mutex）</strong>：Key 过期后，第一个请求用 <code>SETNX</code> 加锁查数据库并重建缓存，其他请求等待。安全但有阻塞。</li>
+<li><strong>逻辑过期（热点 Key 不设 TTL）</strong>：缓存中永远不让 Key 真正过期，而是在 Value 中存储一个”逻辑过期时间”字段。请求时检查逻辑时间，若已过期则异步启动后台线程重建缓存，当前请求返回旧数据（容忍短暂不一致）。<strong>适合允许数据短暂不一致的高并发场景，是我们医院排班缓存采用的方案。</strong></li>
+</ol>
+</li>
+</ul>
+<p><strong>3. 缓存雪崩（大量 Key 同时过期）</strong>：</p>
+<ul>
+<li><strong>现象</strong>：大量缓存 Key 在同一时刻集体过期（如系统初始化时批量设置了相同的过期时间），导致大量请求同时打到数据库，引发雪崩效应。</li>
+<li><strong>解决方案</strong>：<ol>
+<li><strong>过期时间加随机值</strong>：在设置缓存时，在基础过期时间上加上一个随机的偏移量（如 <code>TTL + random(0, 300s)</code>），打散过期时间，防止集中过期。</li>
+<li><strong>多级缓存</strong>：Caffeine 本地缓存 + Redis 分布式缓存，即使 Redis 中缓存全部失效，本地缓存还能扛住大部分流量，降低数据库压力。</li>
+<li><strong>Redis 高可用集群</strong>：主从 + 哨兵或 Cluster 方案，防止 Redis 服务本身宕机导致的雪崩。</li>
+</ol>
+</li>
+</ul>
+</blockquote>
+<hr>
+<h3 id="Q12：缓存与数据库双写一致性（结合招行项目）"><a href="#Q12：缓存与数据库双写一致性（结合招行项目）" class="headerlink" title="Q12：缓存与数据库双写一致性（结合招行项目）"></a>Q12：缓存与数据库双写一致性（结合招行项目）</h3><p><strong>核心考点</strong>：Cache-Aside 的顺序选择，并发下的脏数据问题，延迟双删和 Canal 兜底。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Cache-Aside 模式</strong>（旁路缓存）是最常用的缓存一致性模式：</p>
+<ul>
+<li><strong>读</strong>：先读缓存，命中直接返回；未命中则读数据库，写入缓存，再返回。</li>
+<li><strong>写</strong>：先更新数据库，再删除缓存（而非更新缓存）。</li>
+</ul>
+<p><strong>为什么是”先更库再删缓存”而不是”先删缓存再更库”？</strong><br>如果先删缓存，在删缓存和更库之间的窗口期，其他线程读到缓存 miss，去库里读到旧值（此时库还没更新），并把旧值写入缓存，之后库更新完，缓存里依然是旧值——造成脏数据。而”先更库再删缓存”出现脏数据的概率极低（需要缓存失效 + 极短时间内的并发读写组合）。</p>
+<p><strong>延迟双删弥补漏洞</strong>：</p>
+<ol>
+<li>更新数据库后，立即删除一次缓存。</li>
+<li>通过 MQ&#x2F;异步线程，延迟 500ms~1s 后再删除一次缓存。<br>第二次延迟删除是为了清理那些在第一次删除和更新库之间、被其他线程”污染”写入的旧值缓存。</li>
+</ol>
+<p><strong>Canal + Kafka 强一致性兜底（招行项目实战）</strong>：<br>对于招行规则缓存这类一致性要求极高的数据，我们引入了 Canal 订阅 MySQL Binlog 的方案。Canal 伪装成 MySQL 从库，实时接收主库的 Binlog（ROW 格式），解析出数据变更事件，推送到 Kafka。消费服务接收到消息后，立即失效 Redis 中对应的缓存条目（同时发送 Redis Pub&#x2F;Sub 广播，触发各节点 Caffeine 本地缓存失效）。如果失效失败，Kafka 重试机制确保最终一致性。这套方案完全解耦了业务代码与缓存失效逻辑，是一种<strong>事件驱动的最终一致性</strong>方案。</p>
+</blockquote>
+<hr>
+<h3 id="Q13：Redisson-分布式锁-WatchDog-机制"><a href="#Q13：Redisson-分布式锁-WatchDog-机制" class="headerlink" title="Q13：Redisson 分布式锁 WatchDog 机制"></a>Q13：Redisson 分布式锁 WatchDog 机制</h3><p><strong>核心考点</strong>：默认 30s 过期，每 10s 续期，业务执行完自动停止，防止死锁。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>使用 <code>setnx + expire</code> 自实现分布式锁的两大痛点</strong>：</p>
+<ol>
+<li>过期时间设太短：业务还没执行完，锁就释放了，其他线程可以进来，出现并发安全问题。</li>
+<li>过期时间设太长：如果客户端宕机，锁会长时间占用（死锁），严重影响系统可用性。</li>
+</ol>
+<p><strong>Redisson WatchDog 的解法</strong>：Redisson 的 <code>lock()</code> 方法（不指定 leaseTime 时）默认将锁的过期时间设为 <strong>30 秒</strong>，同时在后台启动一个<strong>守护线程（WatchDog）</strong>，以 <code>lockWatchdogTimeout / 3</code>（即 10 秒）为间隔，检查当前持有锁的线程是否还在运行：</p>
+<ul>
+<li><strong>线程仍在运行</strong>：执行 Lua 脚本将锁的过期时间重置为 30 秒（续期）。</li>
+<li><strong>线程已结束或业务主动 unlock()</strong>：WatchDog 守护线程自动停止，不再续期，锁在 30 秒内自然过期释放。</li>
+<li><strong>客户端宕机（JVM 挂掉）</strong>：WatchDog 线程随之消亡，锁最长在 30 秒后自动释放，不会永久死锁。</li>
+</ul>
+<p>Redisson 的锁操作底层使用 <strong>Lua 脚本</strong>来保证”判断 + 操作”的原子性，避免了非原子操作导致的误删他人锁的问题。</p>
+</blockquote>
+<hr>
+<h3 id="Q14：Redis-Pipeline-和-Lua-脚本的使用场景"><a href="#Q14：Redis-Pipeline-和-Lua-脚本的使用场景" class="headerlink" title="Q14：Redis Pipeline 和 Lua 脚本的使用场景"></a>Q14：Redis Pipeline 和 Lua 脚本的使用场景</h3><p><strong>核心考点</strong>：Pipeline 减少网络往返，Lua 脚本保证多命令原子性。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>Pipeline（管道）</strong>：Redis 的 Pipeline 允许客户端一次性发送多条命令（而不是每条命令都等待一次 RTT 响应），服务端批量执行后一次性返回所有结果。这大大减少了网络往返次数（RTT），在批量操作场景（如批量写入缓存、批量查询）下性能提升显著。<strong>Pipeline 不保证原子性</strong>，命令之间相互独立，任意一条失败不影响其他命令。</p>
+<p><strong>Lua 脚本</strong>：Redis 会将整个 Lua 脚本作为一个<strong>原子操作</strong>来执行，执行期间不会被其他命令打断（因为 Redis 是单线程的）。当需要多个命令组合在一起具有原子性时（如：判断 + 扣减，判断 + 设置），就需要 Lua 脚本。</p>
+<p><strong>典型案例</strong>：</p>
+<ul>
+<li><strong>分布式限流（Lua）</strong>：美团 OpenAPI 防刷，用 Lua 脚本实现”计数自增 + 超限判断 + 设置过期”的原子操作。</li>
+<li><strong>库存扣减（Lua）</strong>：医博系统号源扣减，用 Lua 实现”判断库存 &gt; 0 → 扣减”的原子操作，防止超卖。</li>
+<li><strong>nonce 防重放（Lua 或 SET NX）</strong>：美团 OpenAPI 的 nonce 存储和检查，用 <code>SET nonce value NX EX 300</code> 保证原子性。</li>
+<li><strong>批量缓存预热（Pipeline）</strong>：招行调度中台系统启动时，利用 Pipeline 批量将热点规则数据写入 Redis，提升预热速度。</li>
+</ul>
+</blockquote>
+<hr>
+<h2 id="六、本地缓存-Caffeine"><a href="#六、本地缓存-Caffeine" class="headerlink" title="六、本地缓存 Caffeine"></a>六、本地缓存 Caffeine</h2><h3 id="Q15：Caffeine-的-W-TinyLFU-算法原理"><a href="#Q15：Caffeine-的-W-TinyLFU-算法原理" class="headerlink" title="Q15：Caffeine 的 W-TinyLFU 算法原理"></a>Q15：Caffeine 的 W-TinyLFU 算法原理</h3><p><strong>核心考点</strong>：TinyLFU（频率过滤）+ SLRU（大小 LRU 段），为什么比 LRU 命中率更高。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Caffeine 采用 <strong>W-TinyLFU（Window Tiny LFU）</strong> 淘汰算法，这也是它被称为”现代最先进的本地缓存”的核心原因。</p>
+<p><strong>W-TinyLFU 的两个区域</strong>：</p>
+<ol>
+<li><strong>Window Cache（窗口区，占 1%）</strong>：所有新进入的 Key 先放入窗口区（类似 LRU），给刚进入的 Key 一个”适应期”，防止刚进来的热数据被频率过低而立即淘汰（即解决 LFU 对突发流量不友好的问题）。</li>
+<li><strong>Main Cache（主缓存，占 99%）</strong>：分为 Protected（保护区，80%）和 Probation（试用区，20%）两段，共同构成 SLRU（Segmented LRU）。高频访问的 Key 在保护区，低频的在试用区。</li>
+</ol>
+<p><strong>TinyLFU 准入机制（PK 门控）</strong>：当窗口区的 Key 需要晋升到主缓存，或新 Key 与主缓存的 Key 竞争时，TinyLFU 会比较两者的历史频率（通过 Count-Min Sketch 近似计数），频率高的才能进入或留在主缓存，频率低的被淘汰。</p>
+<p><strong>为什么比 LRU 命中率更高</strong>：LRU 只考虑”最近被访问”，容易受到一次性大批量扫描数据（如批量报表查询）的影响，把真正的热数据从缓存中挤出去（”缓存污染”）。W-TinyLFU 通过频率统计，保护了真正的高频热数据不被偶发的批量访问影响，命中率提升可达 10%~30%。</p>
+</blockquote>
+<hr>
+<h3 id="Q16：分布式多节点本地缓存一致性（结合招行项目）"><a href="#Q16：分布式多节点本地缓存一致性（结合招行项目）" class="headerlink" title="Q16：分布式多节点本地缓存一致性（结合招行项目）"></a>Q16：分布式多节点本地缓存一致性（结合招行项目）</h3><p><strong>核心考点</strong>：本地缓存无法自动同步，需要广播机制；Canal+Kafka 是最优雅的解法。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>Caffeine 是 JVM 进程内的本地缓存，它的数据只在当前服务实例的内存中，在分布式多节点部署下，如果节点 A 更新了数据库并删除了自己的本地缓存，节点 B 和 C 的本地缓存中依然保留着旧数据，出现了<strong>缓存不一致问题</strong>。</p>
+<p><strong>解决方案一：MQ 广播（业务侵入低）</strong>：业务代码在更新数据库的同时，向 Kafka&#x2F;RocketMQ 发布一条缓存失效消息（带上 Key 或数据标识）。所有服务节点都订阅这个 Topic，收到消息后立即执行 <code>caffeine.invalidate(key)</code>。<strong>优点</strong>：解耦彻底，对业务代码侵入小。<strong>缺点</strong>：如果消息丢失或消费延迟，会有短暂不一致。</p>
+<p><strong>解决方案二：Redis Pub&#x2F;Sub 广播</strong>：一个节点完成缓存更新后，向 Redis 的特定 Channel 发布通知，所有节点订阅该 Channel，实时接收并失效本地缓存。延迟比 MQ 更低，但 Redis Pub&#x2F;Sub 不能持久化，如果某个节点消费失败会丢失通知。</p>
+<p><strong>招行调度中台的最终方案（Canal + Kafka + Pub&#x2F;Sub）</strong>：Canal 监听 MySQL Binlog，数据变更时将事件推入 Kafka，消费服务接收到 Kafka 消息后：① 删除&#x2F;更新 Redis 中的分布式缓存；② 向 Redis Pub&#x2F;Sub Channel 广播失效消息，触发所有节点的 Caffeine 本地缓存失效。这种方案完全从数据库变更出发，无需业务代码感知缓存，是最优雅的多级缓存一致性方案。</p>
+</blockquote>
+<hr>
+<h3 id="Q17：Redisson-分布式锁的可重入原理与红锁（Redlock）争议？"><a href="#Q17：Redisson-分布式锁的可重入原理与红锁（Redlock）争议？" class="headerlink" title="Q17：Redisson 分布式锁的可重入原理与红锁（Redlock）争议？"></a>Q17：Redisson 分布式锁的可重入原理与红锁（Redlock）争议？</h3><p><strong>核心考点</strong>：Hash 结构存储重入次数、Lua 脚本原子加锁与重入、tryLock() 内部等待逻辑、Redlock 争议（时钟漂移&#x2F;GC STW）。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>可重入原理</strong>：<br>Redisson 实现可重入锁，其底层使用 <strong>Redis 的 Hash 结构</strong> 来存储锁。Hash 的 key 是锁的名称（如 <code>myLock</code>），field 是持有锁的<strong>线程标识（<code>UUID + threadId</code>）</strong>，value 是<strong>重入次数</strong>（计数器）。</p>
+<ul>
+<li><strong>首次加锁</strong>：若锁不存在，则在 Hash 中创建对应的 field，将 value 设为 1，并设置过期时间。</li>
+<li><strong>锁重入</strong>：若锁已存在，Redisson 会通过 Lua 脚本检查 field 是否与当前请求 of 线程标识一致。若一致，则将 value（重入次数）自增 1，并重新设置锁的过期时间。</li>
+<li><strong>释放锁</strong>：每次释放锁，value 自减 1。只有当 value 减为 0 时，锁才会被彻底删除。这些判断与修改全部由 <strong>Lua 脚本</strong> 封装以保证原子性。</li>
+</ul>
+<p><strong><code>lock()</code> vs <code>tryLock()</code></strong>：</p>
+<ul>
+<li><code>lock()</code> 是一直阻塞等待，直至获取锁或报错。</li>
+<li><code>tryLock(wait, lease, unit)</code> 支持超时获取。若在 <code>wait</code> 时间内未获取到锁，则返回 false。其底层通过<strong>订阅 Redis 的锁释放通道（Pub&#x2F;Sub）</strong>，在拿不到锁时，线程会订阅锁的释放事件并挂起，直到锁释放被唤醒或等待超时，避免了空转自旋对 Redis 的性能消耗。</li>
+</ul>
+<p><strong>红锁（Redlock）算法与争议</strong>：</p>
+<ul>
+<li><strong>为什么需要</strong>：为了解决哨兵或 Cluster 模式下，主从异步复制导致的“主宕机锁丢失”（客户端 A 在主节点加锁成功，主节点未同步给从节点就挂了，从节点还原为主节点，客户端 B 仍能加锁成功，导致锁失效）。</li>
+<li><strong>算法流程</strong>：客户端向 N 个（N 必须是奇数，如 5）独立的、无主从的 Redis 实例发起加锁请求，只有当在<strong>过半数（如 3 个）实例上加锁成功</strong>，且总耗时小于锁的有效时间，才认为加锁成功。</li>
+<li><strong>Martin Kleppmann 的争议点</strong>：<ol>
+<li><strong>系统时钟漂移</strong>：Redlock 强依赖各服务器的本地系统时钟。如果某台服务器发生 NTP 时钟跳变，锁可能会提前过期，导致并发安全失效。</li>
+<li><strong>垃圾回收（GC）引起的 STW 停顿</strong>：客户端在获取锁后发生长时间 GC，在此期间锁在 Redis 上已过期，GC 结束后客户端继续执行临界区代码，导致失效。</li>
+<li>Martin 认为 Redlock 是一个“不上不下”的算法，对性能有影响却又无法保证绝对的数学安全性。如果需要强一致性，应使用 ZooKeeper 或基于 Raft 的强一致性协调系统。</li>
+</ol>
+</li>
+</ul>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.liverainy.online">Live Rainy</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.liverainy.online/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/">https://www.liverainy.online/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.liverainy.online" target="_blank">活在下雨天的博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a><a class="post-meta__tags" href="/tags/Redis/">Redis</a><a class="post-meta__tags" href="/tags/%E7%BC%93%E5%AD%98/">缓存</a></div><div class="post-share"><div class="social-share" data-image="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282011_p0.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">MySQL数据库面试考题</div></div><div class="info-2"><div class="info-item-1">03 - MySQL数据库 · 高频面试考题背诵指南 目录 Q1：B+树为什么比 B树、哈希表更适合做数据库索引？ Q2：聚簇索引和非聚簇索引的区别？什么是回表？ Q3：什么是覆盖索引？如何避免回表？（结合美团项目案例） Q4：联合索引的最左前缀原则？什么情况会导致索引失效？ Q5：索引失效的常见场景（8种） Q6：Explain 各字段含义？type 字段性能排序？ Q7：MySQL 四种事务隔离级别 Q8：InnoDB MVCC 原理详解 Q9：InnoDB 的锁类型详解 Q10：MySQL 死锁如何排查和预防？ Q11：乐观锁和悲观锁？版本号机制如何实现乐观锁？ Q12：MySQL 深分页（LIMIT 1000000, 10）为什么慢？如何优化？ Q13：百万级大表分库分表策略 Q14：MySQL 主从复制原理？Binlog 三种格式的区别？ Q15：一条 SQL 语句在 MySQL 中的完整执行过程     一、索引原理Q1：B+树为什么比 B树、哈希表更适合做数据库索引？核心考点：B+树的叶子节点存数据、非叶子节点只存索引、支持范围查询。 背诵话术：  对比哈希表：哈希...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">Kafka消息队列面试考题</div></div><div class="info-2"><div class="info-item-1">05 - Kafka消息队列 · 高频面试考题背诵指南 目录 Q1：Kafka 的整体架构？核心组件关系？ Q2：Kafka 为什么这么快？ Q3：Kafka 消息存储结构 Q4：ISR、HW、LEO 分别是什么？ Q5：Kafka 生产者发送消息的完整流程 Q6：如何保障 Kafka 消息零丢失？ Q7：Kafka 生产者幂等性原理？如何开启？ Q8：Kafka 消费者组的工作机制 Q9：分区分配策略（Range &#x2F; RoundRobin &#x2F; Sticky） Q10：Rebalance 再平衡的触发条件和如何避免 Q11：如何保证 Kafka 消息的顺序消费？ Q12：消费者如何实现幂等性消费？ Q13：消息积压如何紧急处理？（结合 SRM 项目） Q14：Kafka 事务消息原理？Exactly Once 如何保证？ Q15：死信队列（DLQ）在项目中的应用     一、Kafka 核心概念Q1：Kafka 的整体架构？核心组件关系？核心考点：Broker&#x2F;Topic&#x2F;Partition&#x2F;Replica&#x2F;Produc...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Elasticsearch面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Elasticsearch面试考题</div></div><div class="info-2"><div class="info-item-1">07 - Elasticsearch · 高频面试考题背诵指南 目录 Q1：什么是倒排索引？和正排索引有什么区别？ Q2：ES 的写入流程（数据如何落盘）？ Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？ Q4：ES 的查询流程（Query Then Fetch）？ Q5：ES 深分页（from + size）为什么慢？如何解决？ Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica） Q7：ES 如何保证写一致性？ Q8：ES 和 MySQL 在搜索场景下如何配合？ Q9：分片数和副本数的设计原则？ Q10：ES 为什么比 MySQL 的 LIKE 查询快？ Q11：ES 和 Solr 的选型对比？     一、核心原理Q1：什么是倒排索引？和正排索引有什么区别？核心考点：倒排索引的 Term → PostingList 映射结构，是 ES 全文检索的基石。 背诵话术：  正排索引：以文档 ID 为 Key，记录文档中包含了哪些词（文档 → 关键词）。MySQL 的 B+Tree 索引就是正排索引。适合按...</div></div></div></a><a class="pagination-related" href="/2026/06/08/JVM%E8%B0%83%E4%BC%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="JVM调优面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118298473_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">JVM调优面试考题</div></div><div class="info-2"><div class="info-item-1">06 - JVM调优 · 高频面试考题背诵指南 目录 Q1：JVM 内存区域划分？各区域存什么？哪些区域会 OOM？ Q2：JDK8 的元空间（Metaspace）为什么替换永久代（PermGen）？ Q3：对象的内存布局（对象头 + 实例数据 + 对齐填充） Q4：什么是逃逸分析？JVM 的三种逃逸优化？ Q5：什么是 GC Roots？哪些对象可以作为 GC Roots？ Q6：三种 GC 算法的原理、优缺点 Q7：新生代和老年代？对象晋升的条件？ Q8：CMS 垃圾收集器的工作原理和缺点 Q9：G1 垃圾收集器的 Region 设计 and 工作原理 Q10：ZGC 的原理和为什么能实现 &lt;10ms 的 STW？ Q11：CPU 飙高 100% 的完整排查步骤（结合招行项目） Q12：OOM 内存溢出的完整排查步骤（结合医博项目） Q13：频繁 Full GC 的排查思路 Q14：生产环境核心 JVM 参数 Q15：Arthas 常用诊断命令 Q16：类加载过程？什么是双亲委派模型？为什么要破坏它？     一、JVM 内存结构Q1：JVM 内存区域划分？各区域存什么...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Kafka消息队列面试考题</div></div><div class="info-2"><div class="info-item-1">05 - Kafka消息队列 · 高频面试考题背诵指南 目录 Q1：Kafka 的整体架构？核心组件关系？ Q2：Kafka 为什么这么快？ Q3：Kafka 消息存储结构 Q4：ISR、HW、LEO 分别是什么？ Q5：Kafka 生产者发送消息的完整流程 Q6：如何保障 Kafka 消息零丢失？ Q7：Kafka 生产者幂等性原理？如何开启？ Q8：Kafka 消费者组的工作机制 Q9：分区分配策略（Range &#x2F; RoundRobin &#x2F; Sticky） Q10：Rebalance 再平衡的触发条件和如何避免 Q11：如何保证 Kafka 消息的顺序消费？ Q12：消费者如何实现幂等性消费？ Q13：消息积压如何紧急处理？（结合 SRM 项目） Q14：Kafka 事务消息原理？Exactly Once 如何保证？ Q15：死信队列（DLQ）在项目中的应用     一、Kafka 核心概念Q1：Kafka 的整体架构？核心组件关系？核心考点：Broker&#x2F;Topic&#x2F;Partition&#x2F;Replica&#x2F;Produc...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Spring框架与微服务面试考题</div></div><div class="info-2"><div class="info-item-1">02 - Spring框架与微服务 · 高频面试考题背诵指南 目录 Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？ Q2：Spring Bean 的完整生命周期 Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？ Q4：Spring 如何解决循环依赖？三级缓存各自的作用？ Q5：@Autowired 和 @Resource 的区别？ Q6：@Transactional 失效的场景（至少 5 种） Q7：Spring 事务的 7 种传播行为 Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？ Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？ Q10：MyBatis 的 #{} 和 ${} 的区别？ Q11：Nacos 注册中心工作原理？和 Eureka 的区别？ Q12：Sentinel 的限流算法和熔断策略 Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？ Q14：TCC 模式的三大异常场景（空回滚、悬挂...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Java基础与并发面试考题</div></div><div class="info-2"><div class="info-item-1">01 - Java基础与并发 · 高频面试考题背诵指南 目录 Q1：ArrayList 和 LinkedList 的区别？分别适用什么场景？ Q2：HashMap 底层数据结构是什么？JDK8 做了哪些优化？ Q3：HashMap 的扩容机制？为什么容量必须是 2 的幂次方？ Q4：HashMap 为何线程不安全？JDK7 的死链问题如何发生的？ Q5：ConcurrentHashMap 在 JDK7 和 JDK8 中的实现有何不同？ Q6：HashSet 的底层原理？如何保证元素不重复？ Q7：volatile 关键字的作用？能保证原子性吗？ Q8：synchronized 的实现原理？对象锁和类锁的区别？ Q9：锁升级的过程（无锁→偏向锁→轻量级锁→重量级锁）？ Q10：synchronized 和 ReentrantLock 有什么区别？ Q11：Java 内存模型（JMM）是什么？happens-before 原则有哪些？ Q12：什么是 AQS？它的核心原理是什么？ Q13：CountDownLatch、CyclicBarrier、Semaphore 的使用场景？ Q1...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E9%A1%B9%E7%9B%AESTAR%E4%B8%8E%E5%9C%BA%E6%99%AF%E9%A2%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="项目STAR与场景题面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">项目STAR与场景题面试考题</div></div><div class="info-2"><div class="info-item-1">09 - 项目STAR自述与高频场景题 · 面试通关指南 目录 一、四大项目 STAR 完整自述 项目一：医院后台管理系统（医博系统） 项目二：美团智能化餐饮 SaaS 管家运营引擎 项目三：招商银行分布式核心流程调度中台 项目四：SRM 采购端全链路自动化管理平台   二、技术底层深度挖掘 Q1：动态审批流引擎如何设计（责任链 + 数据库配置）？   三、高频场景题答辩 场景题 1：SRM 询价 Kafka 消息大量积压，如何处理？ 场景题 2：招行中台下游服务假死导致连接池耗尽，如何快速恢复？ 场景题 3：如何设计一个通用的分布式 ID 生成方案？ 场景题 4：秒杀系统的完整设计 场景题 5：微服务接口幂等性如何保证？ 场景题 6：如何设计支持亿级数据的定时任务调度系统？       一、四大项目 STAR 完整自述项目一：医院后台管理系统（医博系统，2020.06 ~ 2022.08）STAR 自述模板：  S（背景）：我毕业后第一份工作是在医博系统技术（深圳），参与开发面向中小型私立医院的数字化管理后台，系统涵盖挂号预约、就诊结算积分核算、药品管理、患者病历管理等模块，服...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Live Rainy</div><div class="author-info-description">个人技术博客</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/foreverhu1998"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">LiveRainy's Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#04-Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98-%C2%B7-%E9%AB%98%E9%A2%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98%E8%83%8C%E8%AF%B5%E6%8C%87%E5%8D%97"><span class="toc-number">1.</span> <span class="toc-text">04 - Redis与本地缓存 · 高频面试考题背诵指南</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81Redis-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.2.</span> <span class="toc-text">一、Redis 数据结构与使用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q1%EF%BC%9ARedis-%E4%BA%94%E7%A7%8D%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E5%8F%8A%E5%BA%95%E5%B1%82%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.1.</span> <span class="toc-text">Q1：Redis 五种核心数据类型及底层实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q2%EF%BC%9AZSet-%E7%9A%84%E8%B7%B3%E8%A1%A8%EF%BC%88skiplist%EF%BC%89%E5%8E%9F%E7%90%86"><span class="toc-number">1.2.2.</span> <span class="toc-text">Q2：ZSet 的跳表（skiplist）原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q3%EF%BC%9ARedis-%E5%B8%B8%E8%A7%81%E4%B8%9A%E5%8A%A1%E5%9C%BA%E6%99%AF%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.2.3.</span> <span class="toc-text">Q3：Redis 常见业务场景实现</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81Redis-%E6%8C%81%E4%B9%85%E5%8C%96"><span class="toc-number">1.3.</span> <span class="toc-text">二、Redis 持久化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q4%EF%BC%9ARDB-%E5%92%8C-AOF-%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9%E5%AF%B9%E6%AF%94%EF%BC%9F%E7%94%9F%E4%BA%A7%E4%B8%AD%E5%A6%82%E4%BD%95%E9%80%89%E6%8B%A9%EF%BC%9F"><span class="toc-number">1.3.1.</span> <span class="toc-text">Q4：RDB 和 AOF 的优缺点对比？生产中如何选择？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q5%EF%BC%9AAOF-%E7%9A%84%E4%B8%89%E7%A7%8D%E5%86%99%E5%9B%9E%E7%AD%96%E7%95%A5"><span class="toc-number">1.3.2.</span> <span class="toc-text">Q5：AOF 的三种写回策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Redis-%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="toc-number">1.4.</span> <span class="toc-text">三、Redis 高可用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q6%EF%BC%9ARedis-%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86"><span class="toc-number">1.4.1.</span> <span class="toc-text">Q6：Redis 主从复制原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q7%EF%BC%9ARedis-Sentinel%EF%BC%88%E5%93%A8%E5%85%B5%EF%BC%89%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">1.4.2.</span> <span class="toc-text">Q7：Redis Sentinel（哨兵）的工作原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q8%EF%BC%9ARedis-Cluster-%E5%88%86%E7%89%87%E9%9B%86%E7%BE%A4%E5%8E%9F%E7%90%86"><span class="toc-number">1.4.3.</span> <span class="toc-text">Q8：Redis Cluster 分片集群原理</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81Redis-%E8%BF%87%E6%9C%9F%E4%B8%8E%E6%B7%98%E6%B1%B0"><span class="toc-number">1.5.</span> <span class="toc-text">四、Redis 过期与淘汰</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q9%EF%BC%9ARedis-%E8%BF%87%E6%9C%9F%E9%94%AE%E5%88%A0%E9%99%A4%E7%AD%96%E7%95%A5"><span class="toc-number">1.5.1.</span> <span class="toc-text">Q9：Redis 过期键删除策略</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q10%EF%BC%9ARedis-%E5%86%85%E5%AD%98%E6%B7%98%E6%B1%B0%E7%AD%96%E7%95%A5"><span class="toc-number">1.5.2.</span> <span class="toc-text">Q10：Redis 内存淘汰策略</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E7%BC%93%E5%AD%98%E9%AB%98%E9%A2%91%E9%97%AE%E9%A2%98"><span class="toc-number">1.6.</span> <span class="toc-text">五、缓存高频问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q11%EF%BC%9A%E7%BC%93%E5%AD%98%E7%A9%BF%E9%80%8F-%E5%87%BB%E7%A9%BF-%E9%9B%AA%E5%B4%A9%E7%9A%84%E5%8C%BA%E5%88%AB%E5%92%8C%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">1.6.1.</span> <span class="toc-text">Q11：缓存穿透&#x2F;击穿&#x2F;雪崩的区别和解决方案</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q12%EF%BC%9A%E7%BC%93%E5%AD%98%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E5%8F%8C%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%88%E7%BB%93%E5%90%88%E6%8B%9B%E8%A1%8C%E9%A1%B9%E7%9B%AE%EF%BC%89"><span class="toc-number">1.6.2.</span> <span class="toc-text">Q12：缓存与数据库双写一致性（结合招行项目）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q13%EF%BC%9ARedisson-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81-WatchDog-%E6%9C%BA%E5%88%B6"><span class="toc-number">1.6.3.</span> <span class="toc-text">Q13：Redisson 分布式锁 WatchDog 机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q14%EF%BC%9ARedis-Pipeline-%E5%92%8C-Lua-%E8%84%9A%E6%9C%AC%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.6.4.</span> <span class="toc-text">Q14：Redis Pipeline 和 Lua 脚本的使用场景</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98-Caffeine"><span class="toc-number">1.7.</span> <span class="toc-text">六、本地缓存 Caffeine</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q15%EF%BC%9ACaffeine-%E7%9A%84-W-TinyLFU-%E7%AE%97%E6%B3%95%E5%8E%9F%E7%90%86"><span class="toc-number">1.7.1.</span> <span class="toc-text">Q15：Caffeine 的 W-TinyLFU 算法原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q16%EF%BC%9A%E5%88%86%E5%B8%83%E5%BC%8F%E5%A4%9A%E8%8A%82%E7%82%B9%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%88%E7%BB%93%E5%90%88%E6%8B%9B%E8%A1%8C%E9%A1%B9%E7%9B%AE%EF%BC%89"><span class="toc-number">1.7.2.</span> <span class="toc-text">Q16：分布式多节点本地缓存一致性（结合招行项目）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q17%EF%BC%9ARedisson-%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81%E7%9A%84%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8E%9F%E7%90%86%E4%B8%8E%E7%BA%A2%E9%94%81%EF%BC%88Redlock%EF%BC%89%E4%BA%89%E8%AE%AE%EF%BC%9F"><span class="toc-number">1.7.3.</span> <span class="toc-text">Q17：Redisson 分布式锁的可重入原理与红锁（Redlock）争议？</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java基础与并发面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题">Java基础与并发面试考题</a><time datetime="2026-06-08T14:09:00.000Z" title="发表于 2026-06-08 22:09:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spring框架与微服务面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题">Spring框架与微服务面试考题</a><time datetime="2026-06-08T14:08:00.000Z" title="发表于 2026-06-08 22:08:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282011_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MySQL数据库面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题">MySQL数据库面试考题</a><time datetime="2026-06-08T14:07:00.000Z" title="发表于 2026-06-08 22:07:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Redis与本地缓存面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题">Redis与本地缓存面试考题</a><time datetime="2026-06-08T14:06:00.000Z" title="发表于 2026-06-08 22:06:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kafka消息队列面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题">Kafka消息队列面试考题</a><time datetime="2026-06-08T14:05:00.000Z" title="发表于 2026-06-08 22:05:00">2026-06-08</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/5120x2880-px-artwork-fiction-nebula-science-space-1819213-wallhere.com.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Live Rainy</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.2</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.2"></script><script src="/js/main.js?v=5.5.2"></script><div class="js-pjax"></div><script async data-pjax src="https://cn.vercount.one/js"></script></div></body></html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Elasticsearch面试考题 | 活在下雨天的博客</title><meta name="author" content="Live Rainy"><meta name="copyright" content="Live Rainy"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="针对ES倒排索引、写入机制、双阶段查询以及深分页优化的搜索引擎高频面试指南。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Elasticsearch面试考题">
+<meta property="og:url" content="https://www.liverainy.online/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html">
+<meta property="og:site_name" content="活在下雨天的博客">
+<meta property="og:description" content="针对ES倒排索引、写入机制、双阶段查询以及深分页优化的搜索引擎高频面试指南。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg">
+<meta property="article:published_time" content="2026-06-08T14:03:00.000Z">
+<meta property="article:modified_time" content="2026-06-08T15:10:58.464Z">
+<meta property="article:author" content="Live Rainy">
+<meta property="article:tag" content="ES">
+<meta property="article:tag" content="Elasticsearch">
+<meta property="article:tag" content="面试">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Elasticsearch面试考题",
+  "url": "https://www.liverainy.online/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/",
+  "image": "https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg",
+  "datePublished": "2026-06-08T14:03:00.000Z",
+  "dateModified": "2026-06-08T15:10:58.464Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Live Rainy",
+      "url": "https://www.liverainy.online"
+    }
+  ]
+}</script><link rel="shortcut icon" href="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg"><link rel="canonical" href="https://www.liverainy.online/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="stylesheet" href="/css/index.css?v=5.5.2"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.12.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Elasticsearch面试考题',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><img class="site-icon" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p2.jpg" alt="Logo"></a><a class="nav-page-title" href="/"><span class="site-name">Elasticsearch面试考题</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Elasticsearch面试考题</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-06-08T14:03:00.000Z" title="发表于 2026-06-08 22:03:00">2026-06-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-06-08T15:10:58.464Z" title="更新于 2026-06-08 23:10:58">2026-06-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%9D%A2%E8%AF%95%E5%A4%8D%E4%B9%A0/">面试复习</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="07-Elasticsearch-·-高频面试考题背诵指南"><a href="#07-Elasticsearch-·-高频面试考题背诵指南" class="headerlink" title="07 - Elasticsearch · 高频面试考题背诵指南"></a>07 - Elasticsearch · 高频面试考题背诵指南</h1><hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#q1%E4%BB%80%E4%B9%88%E6%98%AF%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%E5%92%8C%E6%AD%A3%E6%8E%92%E7%B4%A2%E5%BC%95%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB">Q1：什么是倒排索引？和正排索引有什么区别？</a></li>
+<li><a href="#q2es-%E7%9A%84%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E8%90%BD%E7%9B%98">Q2：ES 的写入流程（数据如何落盘）？</a></li>
+<li><a href="#q3%E4%B8%BA%E4%BB%80%E4%B9%88-es-%E6%98%AF%E8%BF%91%E5%AE%9E%E6%97%B6near-real-time%E8%80%8C%E9%9D%9E%E7%9C%9F%E6%AD%A3%E7%9A%84%E5%AE%9E%E6%97%B6">Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？</a></li>
+<li><a href="#q4es-%E7%9A%84%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8Bquery-then-fetch">Q4：ES 的查询流程（Query Then Fetch）？</a></li>
+<li><a href="#q5es-%E6%B7%B1%E5%88%86%E9%A1%B5from--size%E4%B8%BA%E4%BB%80%E4%B9%88%E6%85%A2%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3">Q5：ES 深分页（from + size）为什么慢？如何解决？</a></li>
+<li><a href="#q6es-%E9%9B%86%E7%BE%A4%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5node--shard--replica">Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica）</a></li>
+<li><a href="#q7es-%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7">Q7：ES 如何保证写一致性？</a></li>
+<li><a href="#q8es-%E5%92%8C-mysql-%E5%9C%A8%E6%90%9C%E7%B4%A2%E5%9C%BA%E6%99%AF%E4%B8%8B%E5%A6%82%E4%BD%95%E9%85%8D%E5%90%88">Q8：ES 和 MySQL 在搜索场景下如何配合？</a></li>
+<li><a href="#q9%E5%88%86%E7%89%87%E6%95%B0%E5%92%8C%E5%89%AF%E6%9C%AC%E6%95%B0%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99">Q9：分片数和副本数的设计原则？</a></li>
+<li><a href="#q10es-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%AF%94-mysql-%E7%9A%84-like-%E6%9F%A5%E8%AF%A2%E5%BF%AB">Q10：ES 为什么比 MySQL 的 LIKE 查询快？</a></li>
+<li><a href="#q11es-%E5%92%8C-solr-%E7%9A%84%E9%80%89%E5%9E%8B%E5%AF%B9%E6%AF%94">Q11：ES 和 Solr 的选型对比？</a></li>
+</ul>
+<hr>
+<span id="more"></span>
+
+<h2 id="一、核心原理"><a href="#一、核心原理" class="headerlink" title="一、核心原理"></a>一、核心原理</h2><h3 id="Q1：什么是倒排索引？和正排索引有什么区别？"><a href="#Q1：什么是倒排索引？和正排索引有什么区别？" class="headerlink" title="Q1：什么是倒排索引？和正排索引有什么区别？"></a>Q1：什么是倒排索引？和正排索引有什么区别？</h3><p><strong>核心考点</strong>：倒排索引的 Term → PostingList 映射结构，是 ES 全文检索的基石。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><strong>正排索引</strong>：以文档 ID 为 Key，记录文档中包含了哪些词（文档 → 关键词）。MySQL 的 B+Tree 索引就是正排索引。适合按 ID 精确查找文档，但不适合”搜索包含某关键词的所有文档”——需要全表扫描每篇文档的内容。</p>
+<p><strong>倒排索引</strong>：以<strong>词条（Term）</strong> 为 Key，记录这个词出现在哪些文档中（关键词 → 文档 ID 列表）。结构如下：</p>
+<ul>
+<li><strong>Term Dictionary（词条字典）</strong>：所有去重后的词条，按字典序排序存储，使用 <strong>FST（Finite State Transducer，有限状态转换器）</strong> 做前缀压缩，内存占用极低。</li>
+<li><strong>Posting List（倒排列表）</strong>：每个 Term 对应的文档 ID 列表，记录该词在哪些文档中出现、出现频率（TF）、出现位置（Position）等信息。多个 Posting List 之间的交集（AND）和并集（OR）就是布尔查询的本质。</li>
+<li><strong>Term Index（词条索引）</strong>：Term Dictionary 的 B-Tree 索引，加速定位目标 Term，避免全量扫描字典。</li>
+</ul>
+<p><strong>搜索过程示例</strong>：搜索”招行”时，ES 先去 Term Index 找到”招行”在 Term Dictionary 中的位置，读取对应的 Posting List（文档 ID 列表），再根据这些 ID 去取文档内容，返回结果。整个过程不需要逐文档扫描。</p>
+</blockquote>
+<hr>
+<h3 id="Q2：ES-的写入流程（数据如何落盘）？"><a href="#Q2：ES-的写入流程（数据如何落盘）？" class="headerlink" title="Q2：ES 的写入流程（数据如何落盘）？"></a>Q2：ES 的写入流程（数据如何落盘）？</h3><p><strong>核心考点</strong>：BUFFER → OS Cache(refresh) → Translog → 磁盘(flush)，近实时的物理原因。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>ES 的写入流程涉及多个组件，核心是<strong>延迟写磁盘 + 写 Translog 保障可靠性</strong>：</p>
+</blockquote>
+<blockquote>
+<ol>
+<li>客户端发送一条写请求到某分片（路由到主分片，主分片写完转发到副本分片）。</li>
+<li>数据先写入<strong>内存 Buffer</strong>（此时不可被搜索）。</li>
+<li>同时将写入操作记录到 <strong>Translog（事务日志）</strong>，Translog 每 5 秒 <code>fsync</code> 一次到磁盘（或每次写请求都 <code>fsync</code>，取决于 <code>index.translog.durability</code> 配置）。</li>
+<li><strong>refresh（默认 1s 一次）</strong>：将内存 Buffer 中的数据生成一个新的 <strong>Segment（段）</strong>，写入 <strong>OS Cache（操作系统页缓存）</strong>，此时数据变为<strong>可搜索</strong>。同时清空内存 Buffer。</li>
+<li><strong>flush（默认 30 分钟一次 &#x2F; Translog 达到 512MB）</strong>：通过 <code>fsync</code> 将 OS Cache 中的 Segment 强制刷到磁盘，并清空旧的 Translog（生成新的 Translog 文件），形成<strong>段提交点（Commit Point）</strong>。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>关键点</strong>：refresh 之前的文档不可搜索；refresh 之后、flush 之前，文档在 OS Cache 中（内存可查但磁盘没有持久化），此时节点宕机会丢失数据，但可通过 Translog 回放恢复。</p>
+</blockquote>
+<hr>
+<h3 id="Q3：为什么-ES-是”近实时（Near-Real-Time）”而非真正的实时？"><a href="#Q3：为什么-ES-是”近实时（Near-Real-Time）”而非真正的实时？" class="headerlink" title="Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？"></a>Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？</h3><p><strong>核心考点</strong>：默认 1s 的 refresh 间隔是根本原因。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>ES 被称为”近实时”（NRT），原因是：数据写入后不会立即被搜索到，必须等到默认<strong>每 1 秒</strong>执行一次 <strong>refresh</strong> 操作（生成新 Segment 并刷新到 OS Cache）之后，新数据才会对搜索可见。这 1 秒的 delay 就是”近”的来源。</p>
+</blockquote>
+<blockquote>
+<p>如果要强制实时可见，可以在写入后显式调用 <code>GET /index/_refresh</code> API 主动触发 refresh，但这会消耗大量资源（频繁生成小 Segment），生产不推荐。</p>
+</blockquote>
+<blockquote>
+<p><strong>为什么 MySQL 也是近实时</strong>：类似地，MySQL InnoDB 的 Buffer Pool 中脏页不立即刷盘，事务提交后数据先写 Redo Log，通过 Checkpoint 机制定期刷盘，也有一段时间窗口。</p>
+</blockquote>
+<hr>
+<h3 id="Q4：ES-的查询流程（Query-Then-Fetch）？"><a href="#Q4：ES-的查询流程（Query-Then-Fetch）？" class="headerlink" title="Q4：ES 的查询流程（Query Then Fetch）？"></a>Q4：ES 的查询流程（Query Then Fetch）？</h3><p><strong>核心考点</strong>：两阶段查询，协调节点先拿 ID 和评分，再按 ID 拉取文档内容。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>ES 的查询分<strong>两个阶段</strong>：<strong>Query 阶段</strong> + <strong>Fetch 阶段</strong>。</p>
+</blockquote>
+<blockquote>
+<p><strong>Query 阶段（打分 + 过滤）</strong>：</p>
+<ol>
+<li>协调节点（Coordinator Node）接收到查询请求，将请求转发给索引涉及的<strong>所有分片</strong>（每个主分片或副本分片）。</li>
+<li>每个分片在本地执行查询（打分、排序、分页），将结果中的 <strong>文档 ID + 排序值</strong>（<code>_id</code>、<code>_score</code>、<code>sort</code> 字段）返回给协调节点，并返回分片级结果总数。</li>
+<li>协调节点合并各分片返回的结果，按分数排序后，确定最终需要的文档 ID 列表（优先级队列）。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>Fetch 阶段（内容拉取）</strong>：</p>
+<ol>
+<li>协调节点根据确定的文档 ID，向相关分片发送 Multi-Get 请求，拉取完整的文档内容（<code>_source</code>）。</li>
+<li>取得完整的文档后，组装为最终响应返回给客户端。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>为什么分两阶段</strong>：如果直接拉取所有分片的完整文档，网络传输数据量巨大，协调节点排序压力也很大。先拿轻量的 ID+分数，排序后再按需拉取内容，效率最高。</p>
+</blockquote>
+<hr>
+<h3 id="Q5：ES-深分页（from-size）为什么慢？如何解决？"><a href="#Q5：ES-深分页（from-size）为什么慢？如何解决？" class="headerlink" title="Q5：ES 深分页（from + size）为什么慢？如何解决？"></a>Q5：ES 深分页（from + size）为什么慢？如何解决？</h3><p><strong>核心考点</strong>：from+size 需要每个分片取出 top(from+size) 条，协调节点再合并排序丢弃前 from 条。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p><code>GET /index/_search { &quot;from&quot;: 10000, &quot;size&quot;: 10 }</code> 慢的根本原因：</p>
+<ul>
+<li>假设有 5 个分片，请求 <code>from=10000, size=10</code> 时，协调节点要求<strong>每个分片</strong>都取出 <strong>Top 10010</strong> 条结果（文档 ID + 分数），总共需要处理 <strong>5 × 10010 &#x3D; 50050 条数据</strong>。</li>
+<li>协调节点在内存中合并这 50050 条数据并全局排序，再丢弃前 10000 条，只返回 10 条。</li>
+<li>分片越多、from 越大，内存和 CPU 消耗越高，ES 通过 <code>max_result_window</code> 默认限制 from + size ≤ 10000。</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>三种解决方案</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>适用场景</th>
+<th>原理</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Scroll</strong></td>
+<td>全量数据导出、离线批处理</td>
+<td>生成一个快照游标，后续翻页基于该快照顺序拉取</td>
+<td>占用 ES 资源（有存活时间）、不支持实时数据、不可跳页</td>
+</tr>
+<tr>
+<td><strong>Search After</strong>（推荐）</td>
+<td>实时搜索的深度翻页</td>
+<td>每次查询记录最后一条的排序值，下次用 <code>search_after</code> 接续查询</td>
+<td>只能点”下一页”，不能跳页、需配合唯一排序值（如 <code>_id</code> 做 tiebreaker）</td>
+</tr>
+<tr>
+<td><strong>限制翻页深度（业务层面）</strong></td>
+<td>用户搜索场景</td>
+<td>对搜索结果限制最多翻到第 N 页（如百度只显示前 76 页），深度翻页需求走异步导出</td>
+<td>不满足所有业务需求</td>
+</tr>
+</tbody></table>
+</blockquote>
+<hr>
+<h2 id="二、集群架构"><a href="#二、集群架构" class="headerlink" title="二、集群架构"></a>二、集群架构</h2><h3 id="Q6：ES-集群的核心概念（Node-Shard-Replica）"><a href="#Q6：ES-集群的核心概念（Node-Shard-Replica）" class="headerlink" title="Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica）"></a>Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica）</h3><p><strong>核心考点</strong>：主分片负责写、副本分片负责读，分片数是水平扩展的基础。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>ES 集群由以下核心概念组成：</p>
+<ul>
+<li><p><strong>Node（节点）</strong>：ES 的服务实例。按角色分为：</p>
+<ul>
+<li><strong>Master Node</strong>：负责集群元数据管理（索引创建&#x2F;删除、分片分配、节点上下线），不处理读写。通过 Bully 算法选举（ES 7.x 之后）。</li>
+<li><strong>Data Node</strong>：存储数据，处理查询和写入。是集群的工作主力。</li>
+<li><strong>Coordinating Node</strong>：接收客户端请求，分发到数据节点并汇总结果。每个节点都可以充当协调节点。</li>
+<li><strong>Ingest Node</strong>：对写入数据做预处理（如 Grok 解析日志、字段增加）。</li>
+</ul>
+</li>
+<li><p><strong>Index（索引）</strong>：逻辑上的数据库，划分为多个物理分片。</p>
+</li>
+<li><p><strong>Primary Shard（主分片）</strong>：数据的第一存放地，所有写请求先写入主分片。主分片数量<strong>索引创建时确定，不能修改</strong>（影响数据路由的 hash 算法）。</p>
+</li>
+<li><p><strong>Replica Shard（副本分片）</strong>：主分片的备份，提供高可用和分担查询压力。副本数可以动态调整。</p>
+</li>
+</ul>
+</blockquote>
+<blockquote>
+<p><strong>数据路由</strong>：<code>shard = hash(_routing) % num_primary_shards</code>（默认 <code>_routing</code> &#x3D; <code>_id</code>），所以主分片数不能修改（改了 hash 结果全变）。</p>
+</blockquote>
+<blockquote>
+<p><strong>在招行项目中</strong>：规则库的检索量达百万级，我们部署 3 个 Data Node，设置每个索引 6 个主分片 + 1 个副本（共 12 个分片分布在 3 个节点上），确保单节点故障不影响搜索可用性。</p>
+</blockquote>
+<hr>
+<h3 id="Q7：ES-如何保证写一致性？"><a href="#Q7：ES-如何保证写一致性？" class="headerlink" title="Q7：ES 如何保证写一致性？"></a>Q7：ES 如何保证写一致性？</h3><p><strong>核心考点</strong>：<code>wait_for_active_shards</code> 和 <code>consistency</code> 配置，主分片 → 副本分片的同步写入。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>ES 的写入一致性通过两个机制保证：</p>
+</blockquote>
+<blockquote>
+<ol>
+<li><strong><code>wait_for_active_shards</code></strong>：控制写操作需要等待多少个分片确认才返回成功。<code>wait_for_active_shards=1</code>（默认）表示只要主分片写入成功就返回，不等待副本分片（性能高但有数据丢失风险）；<code>wait_for_active_shards=all</code> 表示必须主分片 + 所有副本分片都写入成功。</li>
+</ol>
+</blockquote>
+<blockquote>
+<ol start="2">
+<li><strong>Translog 持久化</strong>：即使主分片返回成功后立即宕机，写入操作也会记录在 Translog 中，节点恢复时通过重放 Translog 恢复数据。类似 MySQL Redo Log 的设计。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p><strong>与 Kafka ISR 的对比</strong>：ES 的 <code>wait_for_active_shards=all</code> 类似 Kafka 的 <code>acks=all</code>；ES 的 Translog 类似 Kafka 的 Partition Log。两者都是用”先写日志 + 异步刷盘”来平衡性能与可靠性。</p>
+</blockquote>
+<hr>
+<h2 id="三、ES-vs-MySQL-对比"><a href="#三、ES-vs-MySQL-对比" class="headerlink" title="三、ES vs MySQL 对比"></a>三、ES vs MySQL 对比</h2><h3 id="Q8：ES-和-MySQL-在搜索场景下如何配合？"><a href="#Q8：ES-和-MySQL-在搜索场景下如何配合？" class="headerlink" title="Q8：ES 和 MySQL 在搜索场景下如何配合？"></a>Q8：ES 和 MySQL 在搜索场景下如何配合？</h3><p><strong>核心考点</strong>：各自适用的查询场景，强一致性数据在 MySQL，全文检索和聚合在 ES。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>MySQL 擅长精确查询和事务操作，ES 擅长全文检索、模糊匹配、聚合分析。大规模系统里两者配合使用：</p>
+</blockquote>
+<blockquote>
+<ul>
+<li><strong>MySQL 作为 System of Record（记录系统）</strong>：保存业务数据的权威版本。</li>
+<li><strong>ES 作为 Search Index（搜索索引）</strong>：通过 Canal 或数据同步工具，将 MySQL 业务数据近实时同步到 ES，构建搜索索引。</li>
+</ul>
+<p><strong>招行项目的实际方案</strong>：调度规则配置数据存储在 MySQL，通过 Canal 订阅 Binlog，同时更新 Redis 缓存 + ES 搜索索引。业务人员按规则名称、业务线等关键词检索时，直接查 ES（毫秒级返回），不查 MySQL 做模糊 LIKE 查询（会导致全表扫描），配置详情查 Redis&#x2F;MySQL 获取实时精确数据。</p>
+<p><strong>核心原则</strong>：ES 是衍生的搜索视图，MySQL 是权威数据源，数据不一致时以 MySQL 为准。</p>
+</blockquote>
+<hr>
+<h2 id="四、分片设计与优化"><a href="#四、分片设计与优化" class="headerlink" title="四、分片设计与优化"></a>四、分片设计与优化</h2><h3 id="Q9：分片数和副本数的设计原则？"><a href="#Q9：分片数和副本数的设计原则？" class="headerlink" title="Q9：分片数和副本数的设计原则？"></a>Q9：分片数和副本数的设计原则？</h3><p><strong>核心考点</strong>：分片数由数据量和写入 QPS 决定，副本数由查询 QPS 和可靠性要求决定。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<ul>
+<li><p><strong>主分片数设计</strong>：</p>
+<ul>
+<li>单个分片的数据量建议在 <strong>10~50GB</strong>，过大影响迁移和恢复速度，过小元数据开销大。</li>
+<li>分片数不宜过多：每个分片是一个 Lucene 索引，占用文件句柄和内存，ES 每个节点的分片数建议不超过堆内存的每 GB 20 个分片（如 8GB 堆 ≤ 160 个分片）。</li>
+<li>写并发高时，适当增加主分片数（写请求分散到更多主分片上并行处理）。</li>
+</ul>
+</li>
+<li><p><strong>副本数设计</strong>：</p>
+<ul>
+<li>至少 1 个副本（保证单节点故障数据不丢失）。</li>
+<li>读 QPS 高时增加副本（副本可分担查询请求），但要付出额外的存储和写入同步成本。</li>
+<li>副本数 &#x3D; N，意味着可以容 N 个节点故障同时数据不丢失。</li>
+</ul>
+</li>
+</ul>
+<p><strong>招行项目配置</strong>：规则库数据量约 40GB，设置了 6 个主分片（每分片 6~7GB）+ 1 个副本，3 个 Data Node 各承载 4 个分片（包含主副混合），查询 QPS 高峰约 5000 时保持稳定。</p>
+</blockquote>
+<hr>
+<h2 id="五、面试必问对比题"><a href="#五、面试必问对比题" class="headerlink" title="五、面试必问对比题"></a>五、面试必问对比题</h2><h3 id="Q10：ES-为什么比-MySQL-的-LIKE-查询快？"><a href="#Q10：ES-为什么比-MySQL-的-LIKE-查询快？" class="headerlink" title="Q10：ES 为什么比 MySQL 的 LIKE 查询快？"></a>Q10：ES 为什么比 MySQL 的 LIKE 查询快？</h3><p><strong>核心考点</strong>：倒排索引是 Term → DocID 的 O(1) 命中，LIKE ‘%xxx%’ 是全表扫描。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<p>MySQL 的 <code>LIKE &#39;%xxx%&#39;</code> 前导通配符导致 B+Tree 索引完全失效（无法确定前缀，索引有序性用不上），必须全表扫描每行数据。百万行表做一次 <code>LIKE</code>  就扫百万行，并发一大直接打崩。</p>
+</blockquote>
+<blockquote>
+<p>ES 通过倒排索引，把所有词条预先建立好 Term → DocID 的映射。搜索”招行”时，直接去 Term Dictionary 中二分查找该 Term，拿到 Posting List（包含该词的文档 ID 列表），整个过程是 O(logN + M)（N&#x3D;词条数，M&#x3D;匹配文档数），不需要逐文档扫描，比全表扫描快几个数量级。</p>
+</blockquote>
+<blockquote>
+<p><strong>核心差异</strong>：MySQL 是”读文档 → 找词条”（正排），适合精确查一条数据；ES 是”找词条 → 读文档”（倒排），适合”搜索包含某词的所有文档”。</p>
+</blockquote>
+<hr>
+<h3 id="Q11：ES-和-Solr-的选型对比？"><a href="#Q11：ES-和-Solr-的选型对比？" class="headerlink" title="Q11：ES 和 Solr 的选型对比？"></a>Q11：ES 和 Solr 的选型对比？</h3><p><strong>核心考点</strong>：生态活跃度、实时性、分布式易用性。</p>
+<p><strong>背诵话术</strong>：</p>
+<blockquote>
+<ul>
+<li>ES 基于 JSON 的 RESTful API 更易上手，Solr 传统使用 XML。</li>
+<li>ES 的分布式集群管理更成熟（自动分片分配、节点发现），Solr 依赖 ZooKeeper。</li>
+<li>ES 社区活跃度远超 Solr，与 ELK（Elasticsearch + Logstash + Kibana）生态深度绑定。</li>
+<li>所以生产项目（包括招行）选型时，ELK 生态的日志检索、监控告警是一大加分项。</li>
+</ul>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://www.liverainy.online">Live Rainy</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://www.liverainy.online/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/">https://www.liverainy.online/2026/06/08/Elasticsearch%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://www.liverainy.online" target="_blank">活在下雨天的博客</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E9%9D%A2%E8%AF%95/">面试</a><a class="post-meta__tags" href="/tags/Elasticsearch/">Elasticsearch</a><a class="post-meta__tags" href="/tags/ES/">ES</a></div><div class="post-share"><div class="social-share" data-image="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p0.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/06/08/JVM%E8%B0%83%E4%BC%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="JVM调优面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118298473_p0.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">JVM调优面试考题</div></div><div class="info-2"><div class="info-item-1">06 - JVM调优 · 高频面试考题背诵指南 目录 Q1：JVM 内存区域划分？各区域存什么？哪些区域会 OOM？ Q2：JDK8 的元空间（Metaspace）为什么替换永久代（PermGen）？ Q3：对象的内存布局（对象头 + 实例数据 + 对齐填充） Q4：什么是逃逸分析？JVM 的三种逃逸优化？ Q5：什么是 GC Roots？哪些对象可以作为 GC Roots？ Q6：三种 GC 算法的原理、优缺点 Q7：新生代和老年代？对象晋升的条件？ Q8：CMS 垃圾收集器的工作原理和缺点 Q9：G1 垃圾收集器的 Region 设计 and 工作原理 Q10：ZGC 的原理和为什么能实现 &lt;10ms 的 STW？ Q11：CPU 飙高 100% 的完整排查步骤（结合招行项目） Q12：OOM 内存溢出的完整排查步骤（结合医博项目） Q13：频繁 Full GC 的排查思路 Q14：生产环境核心 JVM 参数 Q15：Arthas 常用诊断命令 Q16：类加载过程？什么是双亲委派模型？为什么要破坏它？     一、JVM 内存结构Q1：JVM 内存区域划分？各区域存什么...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="计算机网络基础面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282751_p0.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">计算机网络基础面试考题</div></div><div class="info-2"><div class="info-item-1">08 - 计算机网络基础 · 高频面试考题背诵指南 目录 Q1：TCP 三次握手过程？为什么是三次而不是两次或四次？ Q2：TCP 四次挥手过程？为什么是四次？TIME_WAIT 为什么是 2MSL？ Q3：TCP 如何保证可靠传输？ Q4：TCP 拥塞控制的四个阶段 Q5：HTTP 1.0 &#x2F; 1.1 &#x2F; 2.0 &#x2F; 3.0 的核心区别 Q6：HTTPS 的握手过程？（TLS 1.2 &#x2F; 1.3） Q7：BIO &#x2F; NIO &#x2F; AIO 的区别？ Q8：select &#x2F; poll &#x2F; epoll 区别？ Q9：Cookie、Session、JWT &#x2F; Token 的区别？ Q10：浏览器输入 URL 后发生了什么？     一、TCPQ1：TCP 三次握手过程？为什么是三次而不是两次或四次？核心考点：握手的目的（同步序列号 + 验证双方收发能力）决定必须是三次。 背诵话术：  三次握手的过程：  客户端 → 服务端：SYN = 1, seq = x（客户端进入 SYN-SENT 状态） 服务...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/06/08/JVM%E8%B0%83%E4%BC%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="JVM调优面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118298473_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">JVM调优面试考题</div></div><div class="info-2"><div class="info-item-1">06 - JVM调优 · 高频面试考题背诵指南 目录 Q1：JVM 内存区域划分？各区域存什么？哪些区域会 OOM？ Q2：JDK8 的元空间（Metaspace）为什么替换永久代（PermGen）？ Q3：对象的内存布局（对象头 + 实例数据 + 对齐填充） Q4：什么是逃逸分析？JVM 的三种逃逸优化？ Q5：什么是 GC Roots？哪些对象可以作为 GC Roots？ Q6：三种 GC 算法的原理、优缺点 Q7：新生代和老年代？对象晋升的条件？ Q8：CMS 垃圾收集器的工作原理和缺点 Q9：G1 垃圾收集器的 Region 设计 and 工作原理 Q10：ZGC 的原理和为什么能实现 &lt;10ms 的 STW？ Q11：CPU 飙高 100% 的完整排查步骤（结合招行项目） Q12：OOM 内存溢出的完整排查步骤（结合医博项目） Q13：频繁 Full GC 的排查思路 Q14：生产环境核心 JVM 参数 Q15：Arthas 常用诊断命令 Q16：类加载过程？什么是双亲委派模型？为什么要破坏它？     一、JVM 内存结构Q1：JVM 内存区域划分？各区域存什么...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Kafka消息队列面试考题</div></div><div class="info-2"><div class="info-item-1">05 - Kafka消息队列 · 高频面试考题背诵指南 目录 Q1：Kafka 的整体架构？核心组件关系？ Q2：Kafka 为什么这么快？ Q3：Kafka 消息存储结构 Q4：ISR、HW、LEO 分别是什么？ Q5：Kafka 生产者发送消息的完整流程 Q6：如何保障 Kafka 消息零丢失？ Q7：Kafka 生产者幂等性原理？如何开启？ Q8：Kafka 消费者组的工作机制 Q9：分区分配策略（Range &#x2F; RoundRobin &#x2F; Sticky） Q10：Rebalance 再平衡的触发条件和如何避免 Q11：如何保证 Kafka 消息的顺序消费？ Q12：消费者如何实现幂等性消费？ Q13：消息积压如何紧急处理？（结合 SRM 项目） Q14：Kafka 事务消息原理？Exactly Once 如何保证？ Q15：死信队列（DLQ）在项目中的应用     一、Kafka 核心概念Q1：Kafka 的整体架构？核心组件关系？核心考点：Broker&#x2F;Topic&#x2F;Partition&#x2F;Replica&#x2F;Produc...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Spring框架与微服务面试考题</div></div><div class="info-2"><div class="info-item-1">02 - Spring框架与微服务 · 高频面试考题背诵指南 目录 Q1：Spring IOC 的工作原理？BeanFactory 和 ApplicationContext 的区别？ Q2：Spring Bean 的完整生命周期 Q3：Spring AOP 原理？JDK 动态代理和 CGLIB 代理的区别？ Q4：Spring 如何解决循环依赖？三级缓存各自的作用？ Q5：@Autowired 和 @Resource 的区别？ Q6：@Transactional 失效的场景（至少 5 种） Q7：Spring 事务的 7 种传播行为 Q8：SpringBoot 自动装配原理？@SpringBootApplication 做了什么？ Q9：MyBatis 的一级缓存和二级缓存？分别有什么坑？ Q10：MyBatis 的 #{} 和 ${} 的区别？ Q11：Nacos 注册中心工作原理？和 Eureka 的区别？ Q12：Sentinel 的限流算法和熔断策略 Q13：Seata 的 TCC 模式原理？AT 模式和 TCC 的区别？ Q14：TCC 模式的三大异常场景（空回滚、悬挂...</div></div></div></a><a class="pagination-related" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">Java基础与并发面试考题</div></div><div class="info-2"><div class="info-item-1">01 - Java基础与并发 · 高频面试考题背诵指南 目录 Q1：ArrayList 和 LinkedList 的区别？分别适用什么场景？ Q2：HashMap 底层数据结构是什么？JDK8 做了哪些优化？ Q3：HashMap 的扩容机制？为什么容量必须是 2 的幂次方？ Q4：HashMap 为何线程不安全？JDK7 的死链问题如何发生的？ Q5：ConcurrentHashMap 在 JDK7 和 JDK8 中的实现有何不同？ Q6：HashSet 的底层原理？如何保证元素不重复？ Q7：volatile 关键字的作用？能保证原子性吗？ Q8：synchronized 的实现原理？对象锁和类锁的区别？ Q9：锁升级的过程（无锁→偏向锁→轻量级锁→重量级锁）？ Q10：synchronized 和 ReentrantLock 有什么区别？ Q11：Java 内存模型（JMM）是什么？happens-before 原则有哪些？ Q12：什么是 AQS？它的核心原理是什么？ Q13：CountDownLatch、CyclicBarrier、Semaphore 的使用场景？ Q1...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E9%A1%B9%E7%9B%AESTAR%E4%B8%8E%E5%9C%BA%E6%99%AF%E9%A2%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="项目STAR与场景题面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">项目STAR与场景题面试考题</div></div><div class="info-2"><div class="info-item-1">09 - 项目STAR自述与高频场景题 · 面试通关指南 目录 一、四大项目 STAR 完整自述 项目一：医院后台管理系统（医博系统） 项目二：美团智能化餐饮 SaaS 管家运营引擎 项目三：招商银行分布式核心流程调度中台 项目四：SRM 采购端全链路自动化管理平台   二、技术底层深度挖掘 Q1：动态审批流引擎如何设计（责任链 + 数据库配置）？   三、高频场景题答辩 场景题 1：SRM 询价 Kafka 消息大量积压，如何处理？ 场景题 2：招行中台下游服务假死导致连接池耗尽，如何快速恢复？ 场景题 3：如何设计一个通用的分布式 ID 生成方案？ 场景题 4：秒杀系统的完整设计 场景题 5：微服务接口幂等性如何保证？ 场景题 6：如何设计支持亿级数据的定时任务调度系统？       一、四大项目 STAR 完整自述项目一：医院后台管理系统（医博系统，2020.06 ~ 2022.08）STAR 自述模板：  S（背景）：我毕业后第一份工作是在医博系统技术（深圳），参与开发面向中小型私立医院的数字化管理后台，系统涵盖挂号预约、就诊结算积分核算、药品管理、患者病历管理等模块，服...</div></div></div></a><a class="pagination-related" href="/2026/06/08/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C%E5%9F%BA%E7%A1%80%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="计算机网络基础面试考题"><img class="cover" src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282751_p0.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-06-08</div><div class="info-item-2">计算机网络基础面试考题</div></div><div class="info-2"><div class="info-item-1">08 - 计算机网络基础 · 高频面试考题背诵指南 目录 Q1：TCP 三次握手过程？为什么是三次而不是两次或四次？ Q2：TCP 四次挥手过程？为什么是四次？TIME_WAIT 为什么是 2MSL？ Q3：TCP 如何保证可靠传输？ Q4：TCP 拥塞控制的四个阶段 Q5：HTTP 1.0 &#x2F; 1.1 &#x2F; 2.0 &#x2F; 3.0 的核心区别 Q6：HTTPS 的握手过程？（TLS 1.2 &#x2F; 1.3） Q7：BIO &#x2F; NIO &#x2F; AIO 的区别？ Q8：select &#x2F; poll &#x2F; epoll 区别？ Q9：Cookie、Session、JWT &#x2F; Token 的区别？ Q10：浏览器输入 URL 后发生了什么？     一、TCPQ1：TCP 三次握手过程？为什么是三次而不是两次或四次？核心考点：握手的目的（同步序列号 + 验证双方收发能力）决定必须是三次。 背诵话术：  三次握手的过程：  客户端 → 服务端：SYN = 1, seq = x（客户端进入 SYN-SENT 状态） 服务...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p1.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Live Rainy</div><div class="author-info-description">个人技术博客</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">9</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">1</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/foreverhu1998"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">LiveRainy's Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#07-Elasticsearch-%C2%B7-%E9%AB%98%E9%A2%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98%E8%83%8C%E8%AF%B5%E6%8C%87%E5%8D%97"><span class="toc-number">1.</span> <span class="toc-text">07 - Elasticsearch · 高频面试考题背诵指南</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E6%A0%B8%E5%BF%83%E5%8E%9F%E7%90%86"><span class="toc-number">1.2.</span> <span class="toc-text">一、核心原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q1%EF%BC%9A%E4%BB%80%E4%B9%88%E6%98%AF%E5%80%92%E6%8E%92%E7%B4%A2%E5%BC%95%EF%BC%9F%E5%92%8C%E6%AD%A3%E6%8E%92%E7%B4%A2%E5%BC%95%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F"><span class="toc-number">1.2.1.</span> <span class="toc-text">Q1：什么是倒排索引？和正排索引有什么区别？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q2%EF%BC%9AES-%E7%9A%84%E5%86%99%E5%85%A5%E6%B5%81%E7%A8%8B%EF%BC%88%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E8%90%BD%E7%9B%98%EF%BC%89%EF%BC%9F"><span class="toc-number">1.2.2.</span> <span class="toc-text">Q2：ES 的写入流程（数据如何落盘）？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q3%EF%BC%9A%E4%B8%BA%E4%BB%80%E4%B9%88-ES-%E6%98%AF%E2%80%9D%E8%BF%91%E5%AE%9E%E6%97%B6%EF%BC%88Near-Real-Time%EF%BC%89%E2%80%9D%E8%80%8C%E9%9D%9E%E7%9C%9F%E6%AD%A3%E7%9A%84%E5%AE%9E%E6%97%B6%EF%BC%9F"><span class="toc-number">1.2.3.</span> <span class="toc-text">Q3：为什么 ES 是”近实时（Near Real-Time）”而非真正的实时？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q4%EF%BC%9AES-%E7%9A%84%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B%EF%BC%88Query-Then-Fetch%EF%BC%89%EF%BC%9F"><span class="toc-number">1.2.4.</span> <span class="toc-text">Q4：ES 的查询流程（Query Then Fetch）？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q5%EF%BC%9AES-%E6%B7%B1%E5%88%86%E9%A1%B5%EF%BC%88from-size%EF%BC%89%E4%B8%BA%E4%BB%80%E4%B9%88%E6%85%A2%EF%BC%9F%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%EF%BC%9F"><span class="toc-number">1.2.5.</span> <span class="toc-text">Q5：ES 深分页（from + size）为什么慢？如何解决？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E9%9B%86%E7%BE%A4%E6%9E%B6%E6%9E%84"><span class="toc-number">1.3.</span> <span class="toc-text">二、集群架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q6%EF%BC%9AES-%E9%9B%86%E7%BE%A4%E7%9A%84%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5%EF%BC%88Node-Shard-Replica%EF%BC%89"><span class="toc-number">1.3.1.</span> <span class="toc-text">Q6：ES 集群的核心概念（Node &#x2F; Shard &#x2F; Replica）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q7%EF%BC%9AES-%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E5%86%99%E4%B8%80%E8%87%B4%E6%80%A7%EF%BC%9F"><span class="toc-number">1.3.2.</span> <span class="toc-text">Q7：ES 如何保证写一致性？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81ES-vs-MySQL-%E5%AF%B9%E6%AF%94"><span class="toc-number">1.4.</span> <span class="toc-text">三、ES vs MySQL 对比</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q8%EF%BC%9AES-%E5%92%8C-MySQL-%E5%9C%A8%E6%90%9C%E7%B4%A2%E5%9C%BA%E6%99%AF%E4%B8%8B%E5%A6%82%E4%BD%95%E9%85%8D%E5%90%88%EF%BC%9F"><span class="toc-number">1.4.1.</span> <span class="toc-text">Q8：ES 和 MySQL 在搜索场景下如何配合？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E5%88%86%E7%89%87%E8%AE%BE%E8%AE%A1%E4%B8%8E%E4%BC%98%E5%8C%96"><span class="toc-number">1.5.</span> <span class="toc-text">四、分片设计与优化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q9%EF%BC%9A%E5%88%86%E7%89%87%E6%95%B0%E5%92%8C%E5%89%AF%E6%9C%AC%E6%95%B0%E7%9A%84%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99%EF%BC%9F"><span class="toc-number">1.5.1.</span> <span class="toc-text">Q9：分片数和副本数的设计原则？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E9%9D%A2%E8%AF%95%E5%BF%85%E9%97%AE%E5%AF%B9%E6%AF%94%E9%A2%98"><span class="toc-number">1.6.</span> <span class="toc-text">五、面试必问对比题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Q10%EF%BC%9AES-%E4%B8%BA%E4%BB%80%E4%B9%88%E6%AF%94-MySQL-%E7%9A%84-LIKE-%E6%9F%A5%E8%AF%A2%E5%BF%AB%EF%BC%9F"><span class="toc-number">1.6.1.</span> <span class="toc-text">Q10：ES 为什么比 MySQL 的 LIKE 查询快？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Q11%EF%BC%9AES-%E5%92%8C-Solr-%E7%9A%84%E9%80%89%E5%9E%8B%E5%AF%B9%E6%AF%94%EF%BC%9F"><span class="toc-number">1.6.2.</span> <span class="toc-text">Q11：ES 和 Solr 的选型对比？</span></a></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118280612_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Java基础与并发面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Java%E5%9F%BA%E7%A1%80%E4%B8%8E%E5%B9%B6%E5%8F%91%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Java基础与并发面试考题">Java基础与并发面试考题</a><time datetime="2026-06-08T14:09:00.000Z" title="发表于 2026-06-08 22:09:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/117521539_p3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Spring框架与微服务面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Spring%E6%A1%86%E6%9E%B6%E4%B8%8E%E5%BE%AE%E6%9C%8D%E5%8A%A1%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Spring框架与微服务面试考题">Spring框架与微服务面试考题</a><time datetime="2026-06-08T14:08:00.000Z" title="发表于 2026-06-08 22:08:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118282011_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MySQL数据库面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/MySQL%E6%95%B0%E6%8D%AE%E5%BA%93%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="MySQL数据库面试考题">MySQL数据库面试考题</a><time datetime="2026-06-08T14:07:00.000Z" title="发表于 2026-06-08 22:07:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118248203_p0.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Redis与本地缓存面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Redis%E4%B8%8E%E6%9C%AC%E5%9C%B0%E7%BC%93%E5%AD%98%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Redis与本地缓存面试考题">Redis与本地缓存面试考题</a><time datetime="2026-06-08T14:06:00.000Z" title="发表于 2026-06-08 22:06:00">2026-06-08</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题"><img src="https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/%E6%96%87%E7%AB%A0/pixiv/118131919_p0.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="Kafka消息队列面试考题"/></a><div class="content"><a class="title" href="/2026/06/08/Kafka%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E9%9D%A2%E8%AF%95%E8%80%83%E9%A2%98/" title="Kafka消息队列面试考题">Kafka消息队列面试考题</a><time datetime="2026-06-08T14:05:00.000Z" title="发表于 2026-06-08 22:05:00">2026-06-08</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(https://liverainy-blog-images.oss-cn-chengdu.aliyuncs.com/5120x2880-px-artwork-fiction-nebula-science-space-1819213-wallhere.com.jpg);"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Live Rainy</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.2</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.2"></script><script src="/js/main.js?v=5.5.2"></script><div class="js-pjax"></div><script async data-pjax src="https://cn.vercount.one/js"></script></div></body></html>
